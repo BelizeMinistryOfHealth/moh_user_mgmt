@@ -18,7 +18,8 @@ import (
 type linkType string
 
 const (
-	passwordReset linkType = "PASSWORD_RESET"
+	passwordReset   linkType = "PASSWORD_RESET"
+	applicationName          = "hiv_surveys"
 )
 
 type Application struct {
@@ -91,8 +92,9 @@ func (s *UserStore) CreateUser(ctx context.Context, user User) (*User, error) {
 			Inner:  err,
 		}
 	}
-	userRecord.CustomClaims = map[string]interface{}{"permissions": user.UserApplication.Permissions}
-	ur, err := s.authClient.UpdateUser(ctx, userRecord.UID, (&auth.UserToUpdate{}).CustomClaims(map[string]interface{}{"permissions": user.UserApplication.Permissions}))
+
+	userRecord.CustomClaims = map[string]interface{}{"applications": map[string]interface{}{user.UserApplication.Name: user.UserApplication.Permissions}}
+	ur, err := s.authClient.UpdateUser(ctx, userRecord.UID, (&auth.UserToUpdate{}).CustomClaims(map[string]interface{}{"applications": userRecord.CustomClaims["applications"]}))
 	if err != nil {
 		return nil, AuthError{
 			Reason: "failed updating auth user claims",
@@ -261,14 +263,21 @@ func (s *UserStore) VerifyToken(ctx context.Context, t string) (JwtToken, error)
 
 	claims := token.Claims
 	email := claims["email"]
-	perms := claims["permissions"]
+	_, err = s.GetUserByEmail(ctx, email.(string))
+	if err != nil {
+		return JwtToken{
+			Email:       email.(string),
+			Permissions: nil,
+		}, AuthError{Inner: err, Reason: "could not find user record with provided email"}
+	}
+	applications := claims["applications"]
+	applicationPermissions := applications.(map[string]interface{})[applicationName]
 	var permissions []string
-	if perms != nil {
-		for idx := range perms.([]interface{}) {
-			permissions = append(permissions, perms.([]interface{})[idx].(string))
+	if applicationPermissions != nil && len(applicationPermissions.([]string)) > 0 {
+		for idx := range applicationPermissions.([]interface{}) {
+			permissions = append(permissions, applicationPermissions.([]interface{})[idx].(string))
 		}
 	}
-
 	return JwtToken{
 		Email:       email.(string),
 		Permissions: permissions,
