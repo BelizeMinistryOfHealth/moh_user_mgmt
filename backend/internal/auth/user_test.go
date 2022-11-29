@@ -49,8 +49,8 @@ func TestUserStore_CreateUser(t *testing.T) {
 	if len(emulatorAuthHost) == 0 {
 		t.Fatalf("FIREBASE_AUTH_EMULATOR_HOST environment variable is missing")
 	}
-
-	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
 	if err != nil {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
@@ -66,9 +66,7 @@ func TestUserStore_CreateUser(t *testing.T) {
 			Name:          "hiv_surveys",
 			Permissions:   []string{},
 		}}}
-	userStore, err := NewStore(ctx, firestoreClient, &firebase.Config{
-		ProjectID: projectID,
-	}, apiKey)
+	userStore, err := NewStore(firestoreClient, apiKey)
 
 	createUser(t, ctx, userStore, user)
 
@@ -76,7 +74,8 @@ func TestUserStore_CreateUser(t *testing.T) {
 
 func TestUserStore_UpdateUser(t *testing.T) {
 	ctx := context.Background()
-	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
 	if err != nil {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
@@ -88,8 +87,7 @@ func TestUserStore_UpdateUser(t *testing.T) {
 		Email:            "uris77@gmail.com",
 		UserApplications: []UserApplication{},
 	}
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	userStore, err := NewStore(ctx, firestoreClient, firebaseConfig, apiKey)
+	userStore, err := NewStore(firestoreClient, apiKey)
 	if err != nil {
 		t.Fatalf("failed to create user store: %v", err)
 	}
@@ -153,12 +151,12 @@ func TestUserStore_UpdateUser(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestUserStore_UpdateUser_AddMultipleApplications(t *testing.T) {
 	ctx := context.Background()
-	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
 	if err != nil {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
@@ -170,8 +168,7 @@ func TestUserStore_UpdateUser_AddMultipleApplications(t *testing.T) {
 		Email:            "uris77@gmail.com",
 		UserApplications: []UserApplication{},
 	}
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	userStore, err := NewStore(ctx, firestoreClient, firebaseConfig, apiKey)
+	userStore, err := NewStore(firestoreClient, apiKey)
 	if err != nil {
 		t.Fatalf("failed to create user store: %v", err)
 	}
@@ -216,7 +213,8 @@ func TestUserStore_UpdateUser_AddMultipleApplications(t *testing.T) {
 
 func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
 	ctx := context.Background()
-	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
 	if err != nil {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
@@ -228,8 +226,7 @@ func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
 		Email:            "uris77@gmail.com",
 		UserApplications: []UserApplication{},
 	}
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	userStore, err := NewStore(ctx, firestoreClient, firebaseConfig, apiKey)
+	userStore, err := NewStore(firestoreClient, apiKey)
 	if err != nil {
 		t.Fatalf("failed to create user store: %v", err)
 	}
@@ -283,4 +280,36 @@ func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
 		})
 	}
 
+}
+
+func TestUserStore_CreateToken(t *testing.T) {
+	ctx := context.Background()
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+	ID := uuid.New().String()
+	user := User{
+		ID:               ID,
+		FirstName:        "Roberto",
+		LastName:         "Guerra",
+		Email:            "uris77@gmail.com",
+		UserApplications: []UserApplication{},
+	}
+	userStore, err := NewStore(firestoreClient, apiKey)
+	if err != nil {
+		t.Fatalf("failed to create user store: %v", err)
+	}
+
+	testUser := createUser(t, ctx, userStore, user)
+
+	token, err := userStore.CreateToken(ctx, testUser.ID)
+	if err != nil {
+		t.Errorf("error creating token for user: %v", err)
+	}
+
+	if token == "" {
+		t.Errorf("wanted non-empty token, got empty string")
+	}
 }

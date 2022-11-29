@@ -20,14 +20,14 @@ func (c *FirestoreClient) Close() error {
 }
 
 // NewFirestoreClient creates a new Firestore connection.
-func NewFirestoreClient(ctx context.Context, projectId string) (*FirestoreClient, error) {
-	app, err := firebase.NewApp(ctx, nil)
+func NewFirestoreClient(ctx context.Context, config *firebase.Config) (*FirestoreClient, error) {
+	app, err := firebase.NewApp(ctx, config)
 	if err != nil {
 		return nil, err
 	}
 	authClient, _ := app.Auth(ctx)
 
-	c, err := firestore.NewClient(ctx, projectId)
+	c, err := firestore.NewClient(ctx, config.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func NewFirestoreClient(ctx context.Context, projectId string) (*FirestoreClient
 		Client:      c,
 		AuthClient:  authClient,
 		AdminClient: app,
-		projectId:   projectId,
+		projectId:   config.ProjectID,
 	}
 	return client, nil
 }

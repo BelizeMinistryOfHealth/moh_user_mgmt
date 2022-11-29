@@ -39,7 +39,7 @@ type User struct {
 func IsAdmin(permissions []string) bool {
 	isAdmin := false
 	for idx := range permissions {
-		if permissions[idx] == "admin:write" {
+		if permissions[idx] == "admin" {
 			isAdmin = true
 		}
 	}
@@ -55,21 +55,12 @@ type UserStore struct {
 }
 
 // NewStore creates a new store that provides ways for creating and mutating a user.
-func NewStore(ctx context.Context, db *db.FirestoreClient, config *firebase.Config, apiKey string) (UserStore, error) {
-	app, err := firebase.NewApp(ctx, config)
-	if err != nil {
-		return UserStore{}, err
-	}
-	authClient, err := app.Auth(ctx)
-	if err != nil {
-		return UserStore{}, err
-	}
-
+func NewStore(db *db.FirestoreClient, apiKey string) (UserStore, error) {
 	return UserStore{
 		db:          db,
 		collection:  "epi_users",
-		authClient:  authClient,
-		adminClient: app,
+		authClient:  db.AuthClient,
+		adminClient: db.AdminClient,
 		apiKey:      apiKey,
 	}, nil
 }
@@ -206,6 +197,13 @@ func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
 			Inner:  err,
 		}
 	}
+	_, err := s.authClient.UpdateUser(ctx, user.ID, (&auth.UserToUpdate{}).DisplayName(fmt.Sprintf("%s %s", user.FirstName, user.LastName)))
+	if err != nil {
+		return AuthError{
+			Reason: "failed to update user's name",
+			Inner:  err,
+		}
+	}
 	return nil
 }
 
@@ -263,12 +261,23 @@ func (s *UserStore) VerifyToken(ctx context.Context, t string) (JwtToken, error)
 	}
 	return JwtToken{
 		Email:       email.(string),
+		Admin:       IsAdmin(permissions),
 		Permissions: permissions,
 	}, nil
 }
 
+func (s *UserStore) CreateToken(ctx context.Context, ID string) (string, error) {
+	token, err := s.authClient.CustomToken(ctx, ID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
 type JwtToken struct {
 	Email       string
+	Admin       bool
 	Permissions []string
 }
 
