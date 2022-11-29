@@ -4,6 +4,8 @@ import (
 	"bz.moh.epi/users/internal/db"
 	"context"
 	firebase "firebase.google.com/go/v4"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"os"
 	"testing"
 )
@@ -11,7 +13,7 @@ import (
 var projectID = os.Getenv("PROJECT_ID")
 var apiKey = os.Getenv("API_KEY")
 
-func createUser(t *testing.T, ctx context.Context, userStore UserStore, user User) {
+func createUser(t *testing.T, ctx context.Context, userStore UserStore, user User) *User {
 	u, err := userStore.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
@@ -27,6 +29,7 @@ func createUser(t *testing.T, ctx context.Context, userStore UserStore, user Use
 			t.Errorf("cleaning up user failed: %v", err)
 		}
 	})
+	return u
 }
 
 func TestUserStore_CreateUser(t *testing.T) {
@@ -58,15 +61,226 @@ func TestUserStore_CreateUser(t *testing.T) {
 		FirstName: "Roberto",
 		LastName:  "Guerra",
 		Email:     "uris77@gmail.com",
-		UserApplication: UserApplication{
+		UserApplications: []UserApplication{{
 			ApplicationID: "b4718c64-5b4f-4649-ab1a-e8cb5c887a92",
 			Name:          "hiv_surveys",
 			Permissions:   []string{},
-		}}
+		}}}
 	userStore, err := NewStore(ctx, firestoreClient, &firebase.Config{
 		ProjectID: projectID,
 	}, apiKey)
 
 	createUser(t, ctx, userStore, user)
+
+}
+
+func TestUserStore_UpdateUser(t *testing.T) {
+	ctx := context.Background()
+	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+	ID := uuid.New().String()
+	user := User{
+		ID:               ID,
+		FirstName:        "Roberto",
+		LastName:         "Guerra",
+		Email:            "uris77@gmail.com",
+		UserApplications: []UserApplication{},
+	}
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	userStore, err := NewStore(ctx, firestoreClient, firebaseConfig, apiKey)
+	if err != nil {
+		t.Fatalf("failed to create user store: %v", err)
+	}
+
+	testUser := createUser(t, ctx, userStore, user)
+
+	var permissionsTcs = []struct {
+		name  string
+		input UserApplication
+		want  []UserApplication
+	}{
+		{"Should add permissions",
+			UserApplication{
+				ApplicationID: ID,
+				Name:          "application 1",
+				Permissions:   []string{"view"},
+			},
+			[]UserApplication{{
+				ApplicationID: ID,
+				Name:          "application 1",
+				Permissions:   []string{"view"},
+			}},
+		},
+		{
+			"Should be able to add more than one permissions to the same application",
+			UserApplication{
+				ApplicationID: ID,
+				Name:          "application 1",
+				Permissions:   []string{"view", "edit"},
+			},
+			[]UserApplication{{
+				ApplicationID: ID,
+				Name:          "application 1",
+				Permissions:   []string{"view", "edit"},
+			}},
+		},
+		{
+			"Should be able to add multiple applications",
+			UserApplication{
+				ApplicationID: ID,
+				Name:          "application 1",
+				Permissions:   []string{"view", "edit"},
+			},
+			[]UserApplication{{
+				ApplicationID: ID,
+				Name:          "application 1",
+				Permissions:   []string{"view", "edit"},
+			}},
+		},
+	}
+
+	for _, tt := range permissionsTcs {
+		t.Run(tt.name, func(t *testing.T) {
+			testUser.UserApplications = []UserApplication{tt.input}
+			err := userStore.UpdateUser(ctx, testUser)
+			if err != nil {
+				t.Errorf("unexpected error updating user: %v", err)
+			}
+			if diff := cmp.Diff(tt.want, testUser.UserApplications); diff != "" {
+				t.Errorf("UpdateUser mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+
+}
+
+func TestUserStore_UpdateUser_AddMultipleApplications(t *testing.T) {
+	ctx := context.Background()
+	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+	ID := uuid.New().String()
+	user := User{
+		ID:               ID,
+		FirstName:        "Roberto",
+		LastName:         "Guerra",
+		Email:            "uris77@gmail.com",
+		UserApplications: []UserApplication{},
+	}
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	userStore, err := NewStore(ctx, firestoreClient, firebaseConfig, apiKey)
+	if err != nil {
+		t.Fatalf("failed to create user store: %v", err)
+	}
+
+	app2ID := uuid.New().String()
+
+	testUser := createUser(t, ctx, userStore, user)
+	want := []UserApplication{
+		{
+			ApplicationID: ID,
+			Name:          "application 1",
+			Permissions:   []string{"view", "edit"},
+		},
+		{
+			ApplicationID: app2ID,
+			Name:          "application 2",
+			Permissions:   []string{"view", "edit"},
+		},
+	}
+	testUser.UserApplications = []UserApplication{
+		{
+			ApplicationID: ID,
+			Name:          "application 1",
+			Permissions:   []string{"view", "edit"},
+		},
+		{
+			ApplicationID: app2ID,
+			Name:          "application 2",
+			Permissions:   []string{"view", "edit"},
+		},
+	}
+
+	err = userStore.UpdateUser(ctx, testUser)
+	if err != nil {
+		t.Errorf("failed to update user: %v", err)
+	}
+
+	if diff := cmp.Diff(want, testUser.UserApplications); diff != "" {
+		t.Errorf("UpdateUser mismatch (-want +got)\n%s", diff)
+	}
+}
+
+func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
+	ctx := context.Background()
+	firestoreClient, err := db.NewFirestoreClient(ctx, projectID)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+	ID := uuid.New().String()
+	user := User{
+		ID:               ID,
+		FirstName:        "Roberto",
+		LastName:         "Guerra",
+		Email:            "uris77@gmail.com",
+		UserApplications: []UserApplication{},
+	}
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	userStore, err := NewStore(ctx, firestoreClient, firebaseConfig, apiKey)
+	if err != nil {
+		t.Fatalf("failed to create user store: %v", err)
+	}
+
+	testUser := createUser(t, ctx, userStore, user)
+
+	var testCases = []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "Should update first name",
+			input: "UpdateName",
+			want:  "UpdateName",
+		},
+		{
+			name:  "Should update last name",
+			input: "UpdatedLastName",
+			want:  "UpdatedLastName",
+		},
+	}
+
+	for idx, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			if idx == 0 {
+				testUser.FirstName = tt.input
+				err := userStore.UpdateUser(ctx, testUser)
+				if err != nil {
+					t.Errorf("error updating user first name: %v", err)
+				}
+
+				u, _ := userStore.GetUserByEmail(ctx, testUser.Email)
+				if u.FirstName != tt.want {
+					t.Errorf("UpdateUser first name | want: %s got: %s", tt.want, u.FirstName)
+				}
+
+			}
+			if idx == 1 {
+				testUser.LastName = tt.input
+				err := userStore.UpdateUser(ctx, testUser)
+				if err != nil {
+					t.Errorf("error updating user first name: %v", err)
+				}
+				u, _ := userStore.GetUserByEmail(ctx, testUser.Email)
+				if u.LastName != tt.want {
+					t.Errorf("UpdateUser last name | want: %s got: %s", tt.want, u.LastName)
+				}
+
+			}
+		})
+	}
 
 }

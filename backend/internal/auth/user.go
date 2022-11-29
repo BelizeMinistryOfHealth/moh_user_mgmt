@@ -22,12 +22,6 @@ const (
 	applicationName          = "hiv_surveys"
 )
 
-type Application struct {
-	ID          string   `json:"id" firestore:"id"`
-	Name        string   `json:"name" firestore:"name"`
-	Permissions []string `json:"permissions" firestore:"permissions"`
-}
-
 type UserApplication struct {
 	ApplicationID string   `json:"id" firestore:"id"`
 	Name          string   `json:"name" firestore:"name"`
@@ -35,11 +29,11 @@ type UserApplication struct {
 }
 
 type User struct {
-	ID              string          `json:"id" firestore:"id"`
-	FirstName       string          `json:"firstName" firestore:"firstName"`
-	LastName        string          `json:"lastName" firestore:"lastName"`
-	Email           string          `json:"email" firestore:"email"`
-	UserApplication UserApplication `json:"userApplication" firestore:"userApplication"`
+	ID               string            `json:"id" firestore:"id"`
+	FirstName        string            `json:"firstName" firestore:"firstName"`
+	LastName         string            `json:"lastName" firestore:"lastName"`
+	Email            string            `json:"email" firestore:"email"`
+	UserApplications []UserApplication `json:"userApplications" firestore:"userApplications"`
 }
 
 func IsAdmin(permissions []string) bool {
@@ -93,17 +87,6 @@ func (s *UserStore) CreateUser(ctx context.Context, user User) (*User, error) {
 		}
 	}
 
-	userRecord.CustomClaims = map[string]interface{}{"applications": map[string]interface{}{user.UserApplication.Name: user.UserApplication.Permissions}}
-	ur, err := s.authClient.UpdateUser(ctx, userRecord.UID, (&auth.UserToUpdate{}).CustomClaims(map[string]interface{}{"applications": userRecord.CustomClaims["applications"]}))
-	if err != nil {
-		return nil, AuthError{
-			Reason: "failed updating auth user claims",
-			Inner:  err,
-		}
-	}
-	log.WithFields(log.Fields{
-		"userRecord": *ur,
-	}).Info("updated user with claims")
 	//Create userRecord in firestore
 	user.ID = userRecord.UID
 	_, err = s.db.Client.Collection(s.collection).Doc(user.ID).Set(ctx, user)
@@ -203,19 +186,19 @@ func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, err
 }
 
 // UpdateUser updates a user's permissions.
-func (s *UserStore) UpdateUser(ctx context.Context, user User) error {
-	userToUpdate := (&auth.UserToUpdate{}).
-		CustomClaims(map[string]interface{}{"permissions": user.UserApplication.Permissions})
-	if _, err := s.authClient.UpdateUser(ctx, user.ID, userToUpdate); err != nil {
-		return AuthError{
-			Reason: "failed to update auth user",
-			Inner:  err,
-		}
-	}
+func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
 	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Update(ctx, []firestore.Update{
 		{
 			Path:  "permissions",
-			Value: user.UserApplication.Permissions,
+			Value: user.UserApplications,
+		},
+		{
+			Path:  "firstName",
+			Value: user.FirstName,
+		},
+		{
+			Path:  "lastName",
+			Value: user.LastName,
 		},
 	}); err != nil {
 		return AuthError{
