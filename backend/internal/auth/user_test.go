@@ -10,10 +10,10 @@ import (
 	"testing"
 )
 
-var projectID = os.Getenv("PROJECT_ID")
-var apiKey = os.Getenv("API_KEY")
+var projectID = os.Getenv("PROJECT_ID") //nolint: gochecknoglobals
+var apiKey = os.Getenv("API_KEY")       //nolint: gochecknoglobals
 
-func createUser(t *testing.T, ctx context.Context, userStore UserStore, user User) *User {
+func createUser(ctx context.Context, t *testing.T, userStore UserStore, user User) *User {
 	u, err := userStore.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
@@ -24,7 +24,7 @@ func createUser(t *testing.T, ctx context.Context, userStore UserStore, user Use
 	}
 
 	t.Cleanup(func() {
-		err = userStore.DeleteUserById(ctx, u.ID)
+		err = userStore.DeleteUserByID(ctx, u.ID)
 		if err != nil {
 			t.Errorf("cleaning up user failed: %v", err)
 		}
@@ -66,9 +66,9 @@ func TestUserStore_CreateUser(t *testing.T) {
 			Name:          "hiv_surveys",
 			Permissions:   []string{},
 		}}}
-	userStore, err := NewStore(firestoreClient, apiKey)
+	userStore, _ := NewStore(firestoreClient, apiKey)
 
-	createUser(t, ctx, userStore, user)
+	createUser(ctx, t, userStore, user)
 
 }
 
@@ -92,7 +92,7 @@ func TestUserStore_UpdateUser(t *testing.T) {
 		t.Fatalf("failed to create user store: %v", err)
 	}
 
-	testUser := createUser(t, ctx, userStore, user)
+	testUser := createUser(ctx, t, userStore, user)
 
 	var permissionsTcs = []struct {
 		name  string
@@ -175,7 +175,7 @@ func TestUserStore_UpdateUser_AddMultipleApplications(t *testing.T) {
 
 	app2ID := uuid.New().String()
 
-	testUser := createUser(t, ctx, userStore, user)
+	testUser := createUser(ctx, t, userStore, user)
 	want := []UserApplication{
 		{
 			ApplicationID: ID,
@@ -231,7 +231,7 @@ func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
 		t.Fatalf("failed to create user store: %v", err)
 	}
 
-	testUser := createUser(t, ctx, userStore, user)
+	testUser := createUser(ctx, t, userStore, user)
 
 	var testCases = []struct {
 		name  string
@@ -302,7 +302,7 @@ func TestUserStore_CreateToken(t *testing.T) {
 		t.Fatalf("failed to create user store: %v", err)
 	}
 
-	testUser := createUser(t, ctx, userStore, user)
+	testUser := createUser(ctx, t, userStore, user)
 
 	token, err := userStore.CreateToken(ctx, testUser.ID)
 	if err != nil {

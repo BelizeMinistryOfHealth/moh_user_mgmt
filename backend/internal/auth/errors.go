@@ -1,8 +1,9 @@
-package auth
+package auth //nolint: revive
 
 import "fmt"
 
-type AuthError struct {
+// AuthError is custom errors thrown by Auth related code
+type AuthError struct { //nolint: revive
 	Reason string
 	Inner  error
 }
@@ -18,6 +19,7 @@ func (e AuthError) Unwrap() error {
 	return e.Inner
 }
 
+// UserError is a custom error emitted by the UserStore
 type UserError struct {
 	Reason string
 	Inner  error
