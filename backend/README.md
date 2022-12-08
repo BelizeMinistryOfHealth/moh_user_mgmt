@@ -23,3 +23,19 @@ Or:
 The Firebase Emulator must be running locally. Run tests with: `make test`
 
 
+## BUILD
+Build with docker:
+```bash 
+docker build -t moh_epi_auth .
+```
+
+Tag: `docker tag moh_epi_auth us-east1-docker.pkg.dev/moh-epi/app-deployments/moh_epi_auth:version`. The version format 
+is: `v0.1.0`, following semver. Eg of tagging with a version:
+```bash
+docker tag moh_epi_auth us-east1-docker.pkg.dev/moh-epi/app-deployments/moh_epi_auth:v0.1.0
+```
+
+Push to the registry:
+```bash 
+docker push us-east1-docker.pkg.dev/moh-epi/app-deployments/moh_epi_auth:v0.1.0
+```
