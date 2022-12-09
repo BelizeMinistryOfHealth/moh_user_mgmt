@@ -39,3 +39,17 @@ Push to the registry:
 ```bash 
 docker push us-east1-docker.pkg.dev/moh-epi/app-deployments/moh_epi_auth:v0.1.0
 ```
+
+
+## Testing
+You need the firestore emulator to run our tests. Build the docker container locally:
+```bash
+docker build -t epi_users_firestore -f emulator/Dockerfile.firestore .
+docker tag epi_users_firestore us-east1-docker.pkg.dev/moh-epi/app-deployments/epi_users_firestore:v0.1.0
+```
+
+Push the image to GCP so we can use it for testing in our automated CI:
+
+```bash
+docker push us-east1-docker.pkg.dev/moh-epi/app-deployments/epi_users_firestore:v0.1.0
+```

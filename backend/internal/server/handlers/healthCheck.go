@@ -6,5 +6,5 @@ import (
 )
 
 func TestHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "OK")
+	fmt.Fprint(w, "OK!")
 }

@@ -17,4 +17,10 @@ variable "zone" {
 variable "tfstate" {
   type        = string
   description = "Holds the terraform state"
+
+}
+
+variable "firebase_api_key" {
+  type        = string
+  description = "API Key for interacting with Firebase"
 }
