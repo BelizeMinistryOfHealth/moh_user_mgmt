@@ -25,7 +25,8 @@ type AppConf struct {
 	FirestoreApiKey string
 }
 
-type serverDeps struct {
+// Deps represents the dependencies that the server requires
+type Deps struct {
 	router          *mux.Router
 	firestoreClient *db.FirestoreClient
 }
@@ -33,7 +34,7 @@ type serverDeps struct {
 // RegisterHandlers creates a router with all its handlers
 // It will instantiate all the db connections required for the handlers
 // to work.
-func RegisterHandlers(ctx context.Context, cnf AppConf) serverDeps {
+func RegisterHandlers(ctx context.Context, cnf AppConf) Deps {
 	firebaseConfig := &firebase.Config{ProjectID: cnf.ProjectID}
 	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
 	if err != nil {
@@ -54,18 +55,16 @@ func RegisterHandlers(ctx context.Context, cnf AppConf) serverDeps {
 		log.Errorf("failed to initiate handlers: %v", err)
 		panic("Could not initiate handlers")
 	}
-	return serverDeps{
+	return Deps{
 		router:          router,
 		firestoreClient: firestoreClient,
 	}
 }
 
 // NewServer starts a http server
-func NewServer(cnf AppConf) {
-	ctx := context.Background()
-	deps := RegisterHandlers(ctx, cnf)
+func NewServer(ctx context.Context, deps Deps, port int) {
 	srv := &http.Server{
-		Addr:         fmt.Sprintf("0.0.0.0:%d", cnf.Port),
+		Addr:         fmt.Sprintf("0.0.0.0:%d", port),
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 30,
 		IdleTimeout:  time.Second * 60,
@@ -99,5 +98,5 @@ func NewServer(cnf AppConf) {
 		log.Fatalf("Server Shotdown failed: %v", err)
 	}
 	log.Println("Server Exited Properly")
-	//os.Exit(0)
+	os.Exit(0)
 }

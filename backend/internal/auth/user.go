@@ -37,6 +37,13 @@ type User struct {
 	UserApplications []UserApplication `json:"userApplications" firestore:"userApplications"`
 }
 
+type CreateUserRequest struct {
+	FirstName        string            `json:"firstName" firestore:"firstName"`
+	LastName         string            `json:"lastName" firestore:"lastName"`
+	Email            string            `json:"email" firestore:"email"`
+	UserApplications []UserApplication `json:"userApplications" firestore:"userApplications"`
+}
+
 // IsAdmin indicates if a given slice of permissions has admin access
 func IsAdmin(permissions []string) bool {
 	isAdmin := false
@@ -46,6 +53,12 @@ func IsAdmin(permissions []string) bool {
 		}
 	}
 	return isAdmin
+}
+
+// UserService describes the contract that any service that will be used for persisting and querying users
+// should satisfy.
+type UserService interface {
+	CreateUser(ctx context.Context, user User) (*User, error)
 }
 
 // UserStore represents a store used for persisting and retrieving users from a data store.
@@ -71,7 +84,7 @@ func NewStore(db *db.FirestoreClient, apiKey string) (UserStore, error) {
 // CreateUser creates an auth user and also creates a record in the user collection.
 // It will send a password reset email so the user, with a link that allows them to set a password
 // for their account.
-func (s *UserStore) CreateUser(ctx context.Context, user User) (*User, error) {
+func (s *UserStore) CreateUser(ctx context.Context, user CreateUserRequest) (*User, error) {
 	u := (&auth.UserToCreate{}).Email(user.Email).DisplayName(fmt.Sprintf("%s %s", user.FirstName, user.LastName)).Disabled(false)
 	userRecord, err := s.authClient.CreateUser(ctx, u)
 	if err != nil {
@@ -81,9 +94,16 @@ func (s *UserStore) CreateUser(ctx context.Context, user User) (*User, error) {
 		}
 	}
 
+	userPayload := &User{
+		ID:               userRecord.UID,
+		FirstName:        user.FirstName,
+		LastName:         user.LastName,
+		Email:            user.Email,
+		UserApplications: user.UserApplications,
+	}
+
 	//Create userRecord in firestore
-	user.ID = userRecord.UID
-	_, err = s.db.Client.Collection(s.collection).Doc(user.ID).Set(ctx, user)
+	_, err = s.db.Client.Collection(s.collection).Doc(userRecord.UID).Set(ctx, userPayload)
 	if err != nil {
 		return nil, AuthError{
 			Reason: "failed inserting user to collection",
@@ -96,7 +116,7 @@ func (s *UserStore) CreateUser(ctx context.Context, user User) (*User, error) {
 			Inner:  err,
 		}
 	}
-	return &user, nil
+	return userPayload, nil
 }
 
 // SendPasswordResetEmail sends an email to the user with a link to reset their password.
@@ -304,6 +324,23 @@ func (s *UserStore) DeleteUserByID(ctx context.Context, id string) error {
 			Reason: "failed deleting user from collection",
 			Inner:  err,
 		}
+	}
+	return nil
+}
+
+// DeleteUserByEmail deletes a user with the matching email. Useful primarily for tests where
+// we do not know the user's ID.
+func (s *UserStore) DeleteUserByEmail(ctx context.Context, email string) error {
+	user, err := s.GetUserByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("error fetching user by email when deleting user by email%w", err)
+	}
+	err = s.authClient.DeleteUser(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("DeleteUserByEmail: error deleting user with email %s: %w", email, err)
+	}
+	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Delete(ctx); err != nil {
+		return fmt.Errorf("DeleteUserByEmail: error deleting user with email %s from collection: %w", user.Email, err)
 	}
 	return nil
 }

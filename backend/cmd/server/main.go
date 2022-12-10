@@ -2,6 +2,8 @@ package main
 
 import (
 	"bz.moh.epi/users/internal/server"
+	"context"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 )
@@ -25,12 +27,17 @@ func main() {
 		}
 	}
 
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+
 	appConf := server.AppConf{
 		ProjectID:       projectID,
 		Port:            port,
 		FirestoreApiKey: apiKey,
 	}
 
-	server.NewServer(appConf)
+	ctx := context.Background()
+	deps := server.RegisterHandlers(ctx, appConf)
+	server.NewServer(ctx, deps, port)
 
 }

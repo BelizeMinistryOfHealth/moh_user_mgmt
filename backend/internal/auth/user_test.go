@@ -13,7 +13,7 @@ import (
 var projectID = os.Getenv("PROJECT_ID") //nolint: gochecknoglobals
 var apiKey = os.Getenv("API_KEY")       //nolint: gochecknoglobals
 
-func createUser(ctx context.Context, t *testing.T, userStore UserStore, user User) *User {
+func createUser(ctx context.Context, t *testing.T, userStore UserStore, user CreateUserRequest) *User {
 	u, err := userStore.CreateUser(ctx, user)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
@@ -56,8 +56,7 @@ func TestUserStore_CreateUser(t *testing.T) {
 	}
 
 	// Create User Store
-	user := User{
-		ID:        "1",
+	user := CreateUserRequest{
 		FirstName: "Roberto",
 		LastName:  "Guerra",
 		Email:     "uris77@gmail.com",
@@ -80,8 +79,7 @@ func TestUserStore_UpdateUser(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	ID := uuid.New().String()
-	user := User{
-		ID:               ID,
+	user := CreateUserRequest{
 		FirstName:        "Roberto",
 		LastName:         "Guerra",
 		Email:            "uris77@gmail.com",
@@ -161,8 +159,7 @@ func TestUserStore_UpdateUser_AddMultipleApplications(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	ID := uuid.New().String()
-	user := User{
-		ID:               ID,
+	user := CreateUserRequest{
 		FirstName:        "Roberto",
 		LastName:         "Guerra",
 		Email:            "uris77@gmail.com",
@@ -218,9 +215,7 @@ func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
-	ID := uuid.New().String()
-	user := User{
-		ID:               ID,
+	user := CreateUserRequest{
 		FirstName:        "Roberto",
 		LastName:         "Guerra",
 		Email:            "uris77@gmail.com",
@@ -289,9 +284,7 @@ func TestUserStore_CreateToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
-	ID := uuid.New().String()
-	user := User{
-		ID:               ID,
+	user := CreateUserRequest{
 		FirstName:        "Roberto",
 		LastName:         "Guerra",
 		Email:            "uris77@gmail.com",
