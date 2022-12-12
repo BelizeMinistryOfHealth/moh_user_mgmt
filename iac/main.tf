@@ -5,7 +5,7 @@ provider "google" {
 }
 
 locals {
-  users_mgmt_container = "us-east1-docker.pkg.dev/moh-epi/app-deployments/moh_epi_auth:v0.2.0"
+  users_mgmt_container = "us-east1-docker.pkg.dev/moh-epi/app-deployments/moh_epi_auth:v0.3.0"
 }
 
 resource "google_artifact_registry_repository" "my-repo" {
