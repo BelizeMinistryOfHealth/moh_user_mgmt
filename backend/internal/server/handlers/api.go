@@ -17,6 +17,7 @@ func API(ctx context.Context, app *internal.App) (*mux.Router, error) {
 	r.HandleFunc("/user",
 		mids.Then(userCrudService.PostUser)).
 		Methods(http.MethodOptions, http.MethodPost)
+	r.HandleFunc("/users", mids.Then(userCrudService.ListUsers)).Methods(http.MethodOptions, http.MethodGet)
 	return r, nil
 }
 

@@ -1,21 +1,27 @@
 import React from 'react';
 import reactLogo from './assets/react.svg';
 import './App.css';
+import { config } from './config';
+import * as firebase from 'firebase/app';
+import { initializeApp } from 'firebase/app';
+import { Provider } from 'react-redux';
+import { store, useTypedSelector } from './store';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './routes/router';
+import { selectUser } from './features/auth/authSlice';
+
+let app: firebase.FirebaseApp | null = null;
+
+if (!app) {
+  app = initializeApp(config);
+  //   console.log({ app });
+}
 
 function App() {
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </div>
+    <Provider store={store}>
+      <RouterProvider router={router} />
+    </Provider>
   );
 }
 

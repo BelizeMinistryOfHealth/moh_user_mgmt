@@ -21,3 +21,8 @@ build-macos:
 	export GO111MODULE=on
 	env GOOS=darwin go build -o bin/server cmd/server/main.go
 	chmod +x bin/server
+
+build-user-cli:
+	export GO111MODULE=on
+	env GOOS=darwin go build -o bin/cli cmd/cli/main.go
+	chmod +x bin/cli

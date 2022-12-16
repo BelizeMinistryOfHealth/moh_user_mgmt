@@ -67,6 +67,7 @@ type UserStore struct {
 	collection  string
 	adminClient *firebase.App
 	authClient  *auth.Client
+	AuthClient  *auth.Client
 	apiKey      string
 }
 
@@ -271,26 +272,40 @@ func (s *UserStore) VerifyToken(ctx context.Context, t string) (JwtToken, error)
 
 	claims := token.Claims
 	email := claims["email"]
-	_, err = s.GetUserByEmail(ctx, email.(string))
+	user, err := s.GetUserByEmail(ctx, email.(string))
 	if err != nil {
 		return JwtToken{
 			Email:       email.(string),
 			Permissions: nil,
 		}, AuthError{Inner: err, Reason: "could not find user record with provided email"}
 	}
-	applications := claims["applications"]
-	applicationPermissions := applications.(map[string]interface{})[applicationName]
+	applications := user.UserApplications
+	if applications == nil {
+		return JwtToken{
+			Email:       email.(string),
+			Admin:       false,
+			Permissions: nil,
+		}, nil
+	}
+	applicationPermissions := findApplication(user.UserApplications, applicationName)
 	var permissions []string
-	if applicationPermissions != nil && len(applicationPermissions.([]string)) > 0 {
-		for idx := range applicationPermissions.([]interface{}) {
-			permissions = append(permissions, applicationPermissions.([]interface{})[idx].(string))
-		}
+	if applicationPermissions != nil && len(applicationPermissions.Permissions) > 0 {
+		permissions = append(permissions, applicationPermissions.Permissions...)
 	}
 	return JwtToken{
 		Email:       email.(string),
 		Admin:       IsAdmin(permissions),
 		Permissions: permissions,
 	}, nil
+}
+
+func findApplication(apps []UserApplication, appName string) *UserApplication {
+	for i := 0; i < len(apps); i++ {
+		if apps[i].Name == appName {
+			return &apps[i]
+		}
+	}
+	return nil
 }
 
 // CreateToken creates a token for a user that matches the ID provided.

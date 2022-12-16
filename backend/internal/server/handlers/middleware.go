@@ -3,6 +3,7 @@ package handlers
 import (
 	"bz.moh.epi/users/internal/auth"
 	"context"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 )
@@ -30,12 +31,18 @@ func VerifyToken(store *auth.UserStore) Middleware {
 			}
 			token := strings.Split(r.Header.Get("Authorization"), " ")
 			if len(token) != 2 {
+				log.WithFields(log.Fields{
+					"token": token,
+				}).Error("token has invalid format")
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
 			jwtToken, err := store.VerifyToken(r.Context(), token[1])
 			if err != nil {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				log.WithFields(log.Fields{
+					"token": token,
+				}).WithError(err).Error("error verifying token")
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			ctx := context.WithValue(r.Context(), "authToken", jwtToken) //nolint: staticcheck
