@@ -17,6 +17,7 @@
     "@reduxjs/toolkit": "^1.9.1",
     "@tabler/icons": "^1.116.1",
     "firebase": "^9.15.0",
+    "jwt-decode": "^3.1.2",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -2,10 +2,13 @@ import React from 'react';
 import { useForm } from '@mantine/form';
 import { Button, Group, PasswordInput, TextInput } from '@mantine/core';
 import * as firebase from 'firebase/auth';
-import { createUser, User } from '../features/auth/authSlice';
+import { createUser } from '../features/auth/authSlice';
 import { useAppDispatch } from '../store';
+import { AuthUser } from '../models/authUser';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
+  const navigate = useNavigate();
   const form = useForm({
     initialValues: {
       email: '',
@@ -24,13 +27,14 @@ const Login = () => {
     const auth = firebase.getAuth();
     try {
       const result = await firebase.signInWithEmailAndPassword(auth, input.email, input.password);
-      const user: User = {
+      const user: AuthUser = {
         uid: result.user.uid,
         email: result.user.email ?? '',
         token: await result.user.getIdToken(),
         refreshToken: result.user.refreshToken,
       };
       dispatch(createUser({ user }));
+      navigate('/');
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore

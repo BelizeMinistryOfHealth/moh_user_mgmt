@@ -1,44 +1,55 @@
 import React from 'react';
-import reactLogo from '../assets/react.svg';
-import { useAppDispatch, useTypedSelector } from '../store';
-import { createUser, selectUser, User } from '../features/auth/authSlice';
-import { importFromLocalStorage, saveToLocalStorage } from '../localStorage';
+import { useAppDispatch } from '../store';
+import { AuthSlice, createUser } from '../features/auth/authSlice';
+import { createStyles, Text } from '@mantine/core';
+import Sidebar from '../components/Sidebar';
+import { useGetUsersQuery } from '../api/usersApi';
+import { AuthUser, User } from '../models/authUser';
+import { useLoaderData } from 'react-router-dom';
+import UsersTable from '../components/UsersTable';
 
+const useStyles = createStyles(() => ({
+  root: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    flexDirection: 'column',
+    height: '100%',
+    gap: '1rem',
+  },
+  header: {
+    display: 'flex',
+  },
+  main: {
+    flex: 3,
+    height: '100%',
+    marginTop: '1rem',
+  },
+}));
 const Root = () => {
-  const user = useTypedSelector(selectUser);
-  const [fetchState, setFetchState] = React.useState('start');
   const dispatch = useAppDispatch();
-  const stateInLocalStorage = importFromLocalStorage();
-  if (!user && stateInLocalStorage?.user) {
-    console.log({ stateInLocalStorage });
-    dispatch(createUser({ user: stateInLocalStorage.user as User }));
+  const { classes } = useStyles();
+  const { data, isLoading, isFetching, isError, isSuccess } = useGetUsersQuery();
+  const loaderData = useLoaderData() as AuthSlice;
+  if (isLoading || isFetching) {
+    dispatch(createUser({ user: loaderData.user as AuthUser }));
+    return <>Loading...</>;
   }
-  console.log({ user });
-  React.useEffect(() => {
-    if (user?.token && fetchState === 'start') {
-      setFetchState('fetching');
-      fetch('https://users-mgmt-e46d3zpgka-ue.a.run.app/users', {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
-      }).then((result) => {
-        console.log({ result });
-        setFetchState('stop');
-      });
-    }
-  }, [fetchState]);
+  if (isError) {
+    return <>Error</>;
+  }
+
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className={classes.root}>
+      <Text color={'white'} size={'lg'}>
+        MOH EPI User Mgmt
+      </Text>
+      <div className={classes.header}>
+        <Sidebar />
       </div>
-      <h1>Vite + React</h1>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+      <main className={classes.main}>
+        <UsersTable users={data as User[]} />
+      </main>
     </div>
   );
 };

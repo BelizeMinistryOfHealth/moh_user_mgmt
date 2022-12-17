@@ -5,7 +5,6 @@ export const importFromLocalStorage = () => {
   let savedState = null;
   try {
     savedState = localStorage.getItem(STORAGE_KEYS.USER_DATA);
-    console.log({ savedState });
   } catch (error) {
     console.error(error);
   }
