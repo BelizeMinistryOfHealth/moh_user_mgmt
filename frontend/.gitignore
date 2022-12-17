@@ -25,3 +25,5 @@ dist-ssr
 
 .firebase
 build
+
+.env*
