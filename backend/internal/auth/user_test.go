@@ -306,3 +306,48 @@ func TestUserStore_CreateToken(t *testing.T) {
 		t.Errorf("wanted non-empty token, got empty string")
 	}
 }
+
+func createApplication(ctx context.Context, t *testing.T, userStore UserStore, request CreateApplicationRequest) *UserApplication {
+	app, err := userStore.CreateApplication(ctx, request)
+	if err != nil {
+		t.Fatalf("error creating user application: %v", err)
+	}
+	t.Cleanup(func() {
+		err = userStore.DeleteApplicationByID(ctx, app.ApplicationID)
+		if err != nil {
+			t.Errorf("cleaning up user applicatino (%s) failed: %v", app.ApplicationID, err)
+		}
+	})
+	return app
+}
+func TestUserStore_ListPermissions(t *testing.T) {
+	ctx := context.Background()
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
+	if err != nil {
+		t.Fatalf("error creating firestore client: %v", err)
+	}
+	userStore, err := NewStore(firestoreClient, apiKey)
+	if err != nil {
+		t.Fatalf("error creating user store: %v", err)
+	}
+
+	// Create a list of applications
+	createApplication(ctx, t, userStore,
+		CreateApplicationRequest{ //nolint: errcheck,gosec
+			Name:        "application 1",
+			Permissions: []string{"admin"},
+		})
+	createApplication(ctx, t, userStore, CreateApplicationRequest{ //nolint:errcheck,gosec
+		Name:        "application 2",
+		Permissions: []string{},
+	})
+	applications, err := userStore.ListApplications(ctx)
+	if err != nil {
+		t.Fatalf("error retrieving applications: %v", err)
+	}
+	// It includes the default one created when the docker container is built
+	if len(applications) != 3 {
+		t.Errorf("wanted 2 applications but got %d", len(applications))
+	}
+}

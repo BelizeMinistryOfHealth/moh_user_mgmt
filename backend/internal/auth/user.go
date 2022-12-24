@@ -21,13 +21,6 @@ const (
 	applicationName = "hiv_surveys"
 )
 
-// UserApplication describes what applications a user has access to.
-type UserApplication struct {
-	ApplicationID string   `json:"id" firestore:"id"`
-	Name          string   `json:"name" firestore:"name"`
-	Permissions   []string `json:"permissions" firestore:"permissions"`
-}
-
 // User represents a user account in the system
 type User struct {
 	ID               string            `json:"id" firestore:"id"`
