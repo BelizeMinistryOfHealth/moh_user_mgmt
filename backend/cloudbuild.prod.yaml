@@ -2,22 +2,31 @@ steps:
 # Build the image
 - name: 'gcr.io/cloud-builders/docker'
   dir: 'backend'
-  args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', '.']
+  args: ['build',
+         '-t',
+         'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${_IMAGE_NAME}:$SHORT_SHA', '.']
   # Tag as latest
 - name: 'gcr.io/cloud-builders/docker'
   dir: 'backend'
-  args: ['tag', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:latest' ]
+  args: ['tag',
+         'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${_IMAGE_NAME}:$SHORT_SHA',
+         'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${_IMAGE_NAME}:latest' ]
 # Push the image to the registry
 - name: 'gcr.io/cloud-builders/docker'
   dir: 'backend'
-  args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA']
+  args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${_IMAGE_NAME}:$SHORT_SHA']
 # Push the image to the registry
 - name: 'gcr.io/cloud-builders/docker'
   dir: 'backend'
-  args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:latest']
+  args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${_IMAGE_NAME}:latest']
 # Deploy to Cloud Run
 - name: 'gcr.io/cloud-builders/gcloud'
   dir: 'backend'
-  args: ['run', 'deploy', 'users-mgmt', '--image', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', '--region', 'us-east1', '--platform', 'managed', '--allow-unauthenticated']
+  args: ['run', 'deploy', 'users-mgmt', '--image',
+         'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${_IMAGE_NAME}:$SHORT_SHA', '--region', 'us-east1',
+         '--platform', 'managed', '--allow-unauthenticated']
+substitutions:
+  _IMAGE_NAME: 'moh_epi_auth'
+  _REGISTRY_NAME: 'app-deployments'
 images:
-- us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth
+- us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${IMAGE_NAME}
