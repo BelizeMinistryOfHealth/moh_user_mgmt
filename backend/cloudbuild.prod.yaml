@@ -1,7 +1,7 @@
 steps:
 # Build the image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', 't', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', '.']
+  args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', '.']
   # Tag as latest
 - name: 'gcr.io/cloud-builders/docker'
   args: ['tag', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:latest' ]
