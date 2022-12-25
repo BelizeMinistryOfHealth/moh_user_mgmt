@@ -29,4 +29,4 @@ substitutions:
   _IMAGE_NAME: 'moh_epi_auth'
   _REGISTRY_NAME: 'app-deployments'
 images:
-- 'us-east1-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/${IMAGE_NAME}'
+- us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth
