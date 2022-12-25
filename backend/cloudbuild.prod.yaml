@@ -1,0 +1,15 @@
+steps:
+# Build the image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', 't', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', '.']
+  # Tag as latest
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['tag', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:latest' ]
+# Push the image to the registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA']
+# Deploy to Cloud Run
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['run', 'deploy', 'myservice', '--image', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA', '--region', 'us-east1', '--platform', 'managed', '--allow-unauthenticated']
+images:
+- us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth
