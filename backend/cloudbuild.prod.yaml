@@ -11,6 +11,10 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   dir: 'backend'
   args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:$SHORT_SHA']
+# Push the image to the registry
+- name: 'gcr.io/cloud-builders/docker'
+  dir: 'backend'
+  args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/app-deployments/moh_epi_auth:latest']
 # Deploy to Cloud Run
 - name: 'gcr.io/cloud-builders/gcloud'
   dir: 'backend'
