@@ -277,6 +277,35 @@ func TestUserStore_UpdateUser_UpdatesNames(t *testing.T) {
 
 }
 
+func TestUserStore_GetUserByID(t *testing.T) {
+
+	ctx := context.Background()
+	firebaseConfig := &firebase.Config{ProjectID: projectID}
+	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
+	if err != nil {
+		t.Fatalf("failed to create firestore client: %v", err)
+	}
+	user := CreateUserRequest{
+		FirstName:        "Roberto",
+		LastName:         "Guerra",
+		Email:            "uris77@gmail.com",
+		UserApplications: []UserApplication{},
+	}
+	userStore, err := NewStore(firestoreClient, apiKey)
+	if err != nil {
+		t.Fatalf("failed to create user store: %v", err)
+	}
+
+	testUser := createUser(ctx, t, userStore, user)
+	retrievedUser, err := userStore.GetUserByID(ctx, testUser.ID)
+	if err != nil {
+		t.Fatalf("error retrieving user by id: %v", err)
+	}
+	if retrievedUser.ID != testUser.ID {
+		t.Errorf("GetUserByID failed, want: %s, got: %s", testUser.ID, retrievedUser.ID)
+	}
+}
+
 func TestUserStore_CreateToken(t *testing.T) {
 	ctx := context.Background()
 	firebaseConfig := &firebase.Config{ProjectID: projectID}

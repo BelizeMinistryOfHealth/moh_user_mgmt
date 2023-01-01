@@ -193,6 +193,31 @@ func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, err
 	return user, nil
 }
 
+// GetUserByID retrieves a user with the matching id. It returns nil if no user is found.
+func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
+	iter := s.db.Client.Collection(s.collection).Where("id", "==", ID).Limit(1).Documents(ctx)
+	var user User
+	for {
+		doc, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, AuthError{
+				Reason: fmt.Sprintf("failed to retrieve user with ID %s", ID),
+				Inner:  err,
+			}
+		}
+		if err := doc.DataTo(&user); err != nil {
+			return nil, AuthError{
+				Reason: fmt.Sprintf("error converting result to User struct: %v", doc),
+				Inner:  err,
+			}
+		}
+	}
+	return &user, nil
+}
+
 // UpdateUser updates a user's permissions.
 func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
 	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Update(ctx, []firestore.Update{
