@@ -1,14 +1,26 @@
 import React from 'react';
 import { useForm } from '@mantine/form';
-import { Button, Group, PasswordInput, TextInput } from '@mantine/core';
+import { Button, createStyles, Group, PasswordInput, TextInput, Title } from '@mantine/core';
 import * as firebase from 'firebase/auth';
 import { createUser } from '../features/auth/authSlice';
 import { useAppDispatch } from '../store';
 import { AuthUser } from '../models/authUser';
 import { useNavigate } from 'react-router-dom';
 
+const useStyles = createStyles(() => ({
+  login: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    height: '100%',
+    gap: '1rem',
+  },
+}));
+
 const Login = () => {
   const navigate = useNavigate();
+  const { classes } = useStyles();
   const form = useForm({
     initialValues: {
       email: '',
@@ -43,8 +55,10 @@ const Login = () => {
   };
 
   return (
-    <div>
-      <h1>Log In</h1>
+    <div className={classes.login}>
+      <Title color={'white'} size={'h1'}>
+        Log In
+      </Title>
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <TextInput required withAsterisk label={'Email'} {...form.getInputProps('email')} />
         <PasswordInput withAsterisk required label={'Password'} {...form.getInputProps('password')} />

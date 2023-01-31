@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authSlice from './features/auth/authSlice';
+import usersSlice from './features/usersSlice';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { apiSlice } from './api/apiSlice';
 
@@ -8,6 +9,7 @@ export const createStore = () => {
     reducer: {
       [apiSlice.reducerPath]: apiSlice.reducer,
       authSlice,
+      usersSlice,
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
   });

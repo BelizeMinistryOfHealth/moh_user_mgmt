@@ -1,36 +1,57 @@
 import React from 'react';
-import { createBrowserRouter, redirect } from 'react-router-dom';
-import Root from './Root';
 import LoginRoute from './LoginRoute';
 import { importFromLocalStorage } from '../localStorage';
-import { AuthSlice } from '../features/auth/authSlice';
+import { createUser, logout } from '../features/auth/authSlice';
 import { STORAGE_KEYS } from '../appConstants';
+import Home from './Home';
+import UsersRoute from './UsersRoute';
+import { createBrowserRouter } from 'react-router-dom';
+import { store } from '../store';
+import { AuthUser } from '../models/authUser';
+import UserEditForm from '../components/UserEditForm';
+import CreateUserForm from '../features/CreateUser/CreateUserForm';
 
+export type RootLoader = { user: AuthUser | null };
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root />,
-    loader: (): AuthSlice => {
-      const localState: AuthSlice = importFromLocalStorage() as AuthSlice;
-      if (!localState || !localState?.user) {
-        throw redirect('/login');
+    element: <Home />,
+    loader: (): RootLoader => {
+      const localState = importFromLocalStorage();
+      if (!localState || !localState.user) {
+        store.dispatch(logout);
+        return { user: null };
       }
-      if (localState.user.expires && localState.user.expires > new Date().getTime()) {
+      if (localState && localState.user?.expires && localState.user.expires > new Date().getTime()) {
+        store.dispatch(createUser({ user: localState.user }));
         localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-        throw redirect('/login');
+        return { user: null };
       }
-      return localState;
-    },
-  },
-  {
-    path: '/login',
-    element: <LoginRoute />,
-    loader: (): AuthSlice => {
-      const localState: AuthSlice = importFromLocalStorage() as AuthSlice;
-      if (localState && localState?.user) {
-        throw redirect('/');
+      if (localState && localState.user) {
+        store.dispatch(createUser({ user: localState.user }));
+        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        return { user: null };
       }
-      return localState;
+      return { user: localState.user };
     },
+    children: [
+      {
+        path: 'users',
+        element: <UsersRoute />,
+        children: [],
+      },
+      {
+        path: 'users/new',
+        element: <CreateUserForm />,
+      },
+      {
+        path: 'users/:userId',
+        element: <UserEditForm />,
+      },
+      {
+        path: 'login',
+        element: <LoginRoute />,
+      },
+    ],
   },
 ]);

@@ -4,15 +4,14 @@ import * as firebase from 'firebase/app';
 import { initializeApp } from 'firebase/app';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { RouterProvider } from 'react-router-dom';
 import { router } from './routes/router';
 import { MantineProvider } from '@mantine/core';
+import { RouterProvider } from 'react-router-dom';
 
 let app: firebase.FirebaseApp | null = null;
 
-if (!app) {
+if (app === null) {
   app = initializeApp(config);
-  //   console.log({ app });
 }
 
 function App() {
