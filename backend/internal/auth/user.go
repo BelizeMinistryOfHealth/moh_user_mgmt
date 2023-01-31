@@ -222,7 +222,7 @@ func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
 func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
 	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Update(ctx, []firestore.Update{
 		{
-			Path:  "permissions",
+			Path:  "userApplications",
 			Value: user.UserApplications,
 		},
 		{
