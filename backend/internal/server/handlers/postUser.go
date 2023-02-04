@@ -51,17 +51,28 @@ func (s *UserCrudService) PostUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User Role provided is not valid", http.StatusBadRequest)
 		return
 	}
+	org, err := auth.ToOrg(requestPayload.Org)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"body": r.Body,
+			"user": requestPayload,
+		}).WithError(err).Error("Invalid Organization")
+		http.Error(w, "Organization provided is not valid", http.StatusBadRequest)
+		return
+	}
 
 	createRequest := auth.CreateUserRequest{
 		FirstName: requestPayload.FirstName,
 		LastName:  requestPayload.LastName,
 		Email:     requestPayload.Email,
-		Org:       requestPayload.Org,
+		Org:       org,
 		Role:      role,
 		CreatedBy: token.Email,
 	}
 
-	user, err := s.UserStore.CreateUser(r.Context(), createRequest)
+	user, err := s.UserApi.CreateUser(r.Context(), createRequest)
+
+	//user, err := s.UserStore.CreateUser(r.Context(), createRequest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"body": r.Body,

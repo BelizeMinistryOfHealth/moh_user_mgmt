@@ -2,6 +2,7 @@ package server
 
 import (
 	"bz.moh.epi/users/internal"
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"bz.moh.epi/users/internal/db"
 	"bz.moh.epi/users/internal/server/handlers"
@@ -42,10 +43,12 @@ func RegisterHandlers(ctx context.Context, cnf AppConf) Deps {
 		os.Exit(-1)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, cnf.FirestoreApiKey)
+	userApi := api.CreateUserApi(userStore)
 
 	app := &internal.App{
 		Firestore:       firestoreClient,
 		UserStore:       &userStore,
+		UserApi:         userApi,
 		ProjectID:       cnf.ProjectID,
 		FirestoreApiKey: cnf.FirestoreApiKey,
 	}

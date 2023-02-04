@@ -52,7 +52,16 @@ func (s *UserCrudService) PutUser(w http.ResponseWriter, r *http.Request) {
 			"body": r.Body,
 			"user": requestPayload,
 		}).WithError(err).Error("Invalid User Role")
-		http.Error(w, "User Role provided is no valid", http.StatusBadRequest)
+		http.Error(w, "User Role provided is not valid", http.StatusBadRequest)
+		return
+	}
+	org, err := auth.ToOrg(requestPayload.Org)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"body": r.Body,
+			"user": requestPayload,
+		}).WithError(err).Error("Invalid Organization")
+		http.Error(w, "Organization provided is not valid", http.StatusBadRequest)
 		return
 	}
 
@@ -61,7 +70,7 @@ func (s *UserCrudService) PutUser(w http.ResponseWriter, r *http.Request) {
 		FirstName: requestPayload.FirstName,
 		LastName:  requestPayload.LastName,
 		Email:     requestPayload.Email,
-		Org:       requestPayload.Org,
+		Org:       org,
 		Role:      role,
 	}
 	if err := s.UserStore.UpdateUser(r.Context(), &user); err != nil {

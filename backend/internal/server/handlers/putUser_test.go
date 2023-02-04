@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"bz.moh.epi/users/internal/db"
 	"context"
@@ -23,14 +24,15 @@ func TestPutUser_FailsIfNotAdmin(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
+	userApi := api.CreateUserApi(userStore)
 	mids := NewChain(verifyTokenNonAdmin())
-	userCrudService := NewUserCrudService(&userStore)
+	userCrudService := NewUserCrudService(&userStore, userApi)
 	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
 		FirstName: "Dan",
 		LastName:  "Th",
 		Email:     email,
-		Org:       "BFLA",
+		Org:       auth.BFLA,
 		Role:      auth.PeerNavigatorRole,
 	}
 	usr, err := createUser(ctx, t, userStore, createRequest)
@@ -61,14 +63,15 @@ func TestPutUser_Success(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
+	userApi := api.CreateUserApi(userStore)
 	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore)
+	userCrudService := NewUserCrudService(&userStore, userApi)
 	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
 		FirstName: "Dan",
 		LastName:  "Th",
 		Email:     email,
-		Org:       "BFLA",
+		Org:       auth.BFLA,
 		Role:      auth.SrRole,
 	}
 	usr, err := createUser(ctx, t, userStore, createRequest)
@@ -90,7 +93,10 @@ func TestPutUser_Success(t *testing.T) {
 	if res.Code != 200 {
 		t.Errorf("want: %d; got: %d", 200, res.Code)
 	}
-	wantUser, _ := userStore.GetUserByID(ctx, usr.ID)
+	wantUser, err := userStore.GetUserByID(ctx, usr.ID)
+	if err != nil {
+		t.Fatalf("failed to get user by id: %v", err)
+	}
 	if wantUser.LastName != putBody.LastName {
 		t.Errorf("Updating user failed want: %s; got: %s", wantUser.LastName, putBody.LastName)
 	}
@@ -103,14 +109,15 @@ func TestPutUser_UpdatesRoles(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
+	userApi := api.CreateUserApi(userStore)
 	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore)
+	userCrudService := NewUserCrudService(&userStore, userApi)
 	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
 		FirstName: "Dan",
 		LastName:  "Th",
 		Email:     email,
-		Org:       "BFLA",
+		Org:       auth.BFLA,
 		Role:      auth.PeerNavigatorRole,
 	}
 	usr, err := createUser(ctx, t, userStore, createRequest)

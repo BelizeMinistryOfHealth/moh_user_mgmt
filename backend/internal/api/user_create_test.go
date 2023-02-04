@@ -17,7 +17,7 @@ func TestCreateUserApi_NAC_AdminsCanCreateUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	nacUser := createAdminUser(t, ctx, userStore, "NAC")
+	nacUser := createAdminUser(t, ctx, userStore, auth.NAC)
 
 	var testCases = []struct {
 		name  string
@@ -28,7 +28,7 @@ func TestCreateUserApi_NAC_AdminsCanCreateUsers(t *testing.T) {
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       "NAC",
+				Org:       auth.NAC,
 				Role:      auth.AdminRole,
 				CreatedBy: nacUser.Email,
 			},
@@ -39,7 +39,7 @@ func TestCreateUserApi_NAC_AdminsCanCreateUsers(t *testing.T) {
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       "BFLA",
+				Org:       auth.BFLA,
 				Role:      auth.AdminRole,
 				CreatedBy: nacUser.Email,
 			},
@@ -48,6 +48,11 @@ func TestCreateUserApi_NAC_AdminsCanCreateUsers(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := userApi.CreateUser(ctx, tt.input)
+			t.Cleanup(func() {
+				if got != nil {
+					_ = userStore.DeleteUserByID(ctx, got.ID) //nolint: errcheck,gosec
+				}
+			})
 			if err != nil {
 				t.Errorf("CreateUser() error = %v", err)
 			}
@@ -58,11 +63,30 @@ func TestCreateUserApi_NAC_AdminsCanCreateUsers(t *testing.T) {
 	}
 }
 
+func TestCreateUserApi_NAC_AdminsCanNotCreateMOHWUsers(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	nacUser := createAdminUser(t, ctx, userStore, auth.NAC)
+	createRequest := auth.CreateUserRequest{
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
+		Email:     gofakeit.Email(),
+		Org:       auth.MOHW,
+		Role:      auth.AdminRole,
+		CreatedBy: nacUser.Email,
+	}
+	_, err := userApi.CreateUser(ctx, createRequest)
+	if err == nil {
+		t.Errorf("CreateUser() should return an error = %v", err)
+	}
+}
+
 func TestCreateUserApi_MOHW_AdminsCanCreateUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	nacUser := createAdminUser(t, ctx, userStore, "NAC")
+	mohwUser := createAdminUser(t, ctx, userStore, auth.MOHW)
 
 	var testCases = []struct {
 		name  string
@@ -73,9 +97,9 @@ func TestCreateUserApi_MOHW_AdminsCanCreateUsers(t *testing.T) {
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       "MOHW",
+				Org:       auth.MOHW,
 				Role:      auth.AdminRole,
-				CreatedBy: nacUser.Email,
+				CreatedBy: mohwUser.Email,
 			},
 		},
 		{
@@ -84,9 +108,9 @@ func TestCreateUserApi_MOHW_AdminsCanCreateUsers(t *testing.T) {
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       "BFLA",
+				Org:       auth.BFLA,
 				Role:      auth.AdminRole,
-				CreatedBy: nacUser.Email,
+				CreatedBy: mohwUser.Email,
 			},
 		},
 		{
@@ -95,15 +119,249 @@ func TestCreateUserApi_MOHW_AdminsCanCreateUsers(t *testing.T) {
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       "NAC",
+				Org:       auth.NAC,
 				Role:      auth.AdminRole,
-				CreatedBy: nacUser.Email,
+				CreatedBy: mohwUser.Email,
 			},
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := userApi.CreateUser(ctx, tt.input)
+			t.Cleanup(func() {
+				if got != nil {
+					userStore.DeleteUserByID(ctx, got.ID) //nolint:errcheck,gosec
+				}
+			})
+			if err != nil {
+				t.Errorf("CreateUser() error = %v", err)
+			}
+			if got == nil {
+				t.Errorf("CreateUser() got = %v", got)
+			}
+		})
+	}
+}
+
+func TestCreateUserApi_BFLA_AdminsCanCreateUsers(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	bflaUser := createAdminUser(t, ctx, userStore, auth.BFLA)
+
+	var testCases = []struct {
+		name  string
+		input auth.CreateUserRequest
+	}{
+		{"BFLA Admins can create Peer Navigators at BFLA",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.BFLA,
+				Role:      auth.PeerNavigatorRole,
+				CreatedBy: bflaUser.Email,
+			},
+		},
+		{
+			"BFLA Admins can create Adherence Counselors at BFLA",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.BFLA,
+				Role:      auth.AdherenceCounselorRole,
+				CreatedBy: bflaUser.Email,
+			},
+		},
+		{
+			"BFLA Admins can create SRs at BFLA",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.BFLA,
+				Role:      auth.SrRole,
+				CreatedBy: bflaUser.Email,
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := userApi.CreateUser(ctx, tt.input)
+			t.Cleanup(func() {
+				if got != nil {
+					userStore.DeleteUserByID(ctx, got.ID) //nolint:errcheck,gosec
+				}
+
+			})
+			if err != nil {
+				t.Errorf("CreateUser() error = %v", err)
+			}
+			if got == nil {
+				t.Errorf("CreateUser() got = %v", got)
+			}
+		})
+	}
+}
+
+func TestCreateUserApi_BFLA_CanNotCreateMOHWAndNACUsers(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	bflaUser := createAdminUser(t, ctx, userStore, auth.BFLA)
+	var testCases = []struct {
+		name  string
+		input auth.CreateUserRequest
+	}{
+
+		{
+			"BFLA Admins can not create MOHW Admins",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.MOHW,
+				Role:      auth.AdminRole,
+				CreatedBy: bflaUser.Email,
+			},
+		},
+		{
+			"BFLA Admins can not create CSO Admins",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.CSO,
+				Role:      auth.AdminRole,
+				CreatedBy: bflaUser.Email,
+			},
+		},
+		{
+			"BFLA Admins can not create NAC Admins",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.NAC,
+				Role:      auth.AdminRole,
+				CreatedBy: bflaUser.Email,
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := userApi.CreateUser(ctx, tt.input)
+			if err == nil {
+				t.Errorf("CreateUser() expected an error")
+			}
+		})
+	}
+}
+func TestCreateUserApi_CSO_CanNotCreateMOHWAndNACUsers(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	csoUser := createAdminUser(t, ctx, userStore, auth.CSO)
+	var testCases = []struct {
+		name  string
+		input auth.CreateUserRequest
+	}{
+
+		{
+			"CSO Admins can not create MOHW Admins",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.MOHW,
+				Role:      auth.AdminRole,
+				CreatedBy: csoUser.Email,
+			},
+		},
+		{
+			"CSO Admins can not create BFLA Admins",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.BFLA,
+				Role:      auth.AdminRole,
+				CreatedBy: csoUser.Email,
+			},
+		},
+		{
+			"CSO Admins can not create NAC Admins",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.NAC,
+				Role:      auth.AdminRole,
+				CreatedBy: csoUser.Email,
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := userApi.CreateUser(ctx, tt.input)
+			if err == nil {
+				t.Errorf("CreateUser() expected an error")
+			}
+		})
+	}
+}
+func TestCreateUserApi_CSO_AdminsCanCreateUsers(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	csoUser := createAdminUser(t, ctx, userStore, auth.CSO)
+
+	var testCases = []struct {
+		name  string
+		input auth.CreateUserRequest
+	}{
+		{"CSO Admins can create Peer Navigators at CSO",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.CSO,
+				Role:      auth.PeerNavigatorRole,
+				CreatedBy: csoUser.Email,
+			},
+		},
+		{
+			"CSO Admins can create Adherence Counselors at CSO",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.CSO,
+				Role:      auth.AdherenceCounselorRole,
+				CreatedBy: csoUser.Email,
+			},
+		},
+		{
+			"CSO Admins can create SRs at CSO",
+			auth.CreateUserRequest{
+				FirstName: gofakeit.FirstName(),
+				LastName:  gofakeit.LastName(),
+				Email:     gofakeit.Email(),
+				Org:       auth.CSO,
+				Role:      auth.SrRole,
+				CreatedBy: csoUser.Email,
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := userApi.CreateUser(ctx, tt.input)
+			t.Cleanup(func() {
+				if got != nil {
+					userStore.DeleteUserByID(ctx, got.ID) // nolint:errcheck,gosec
+				}
+			})
 			if err != nil {
 				t.Errorf("CreateUser() error = %v", err)
 			}
@@ -138,7 +396,7 @@ func createUserStore(t *testing.T, ctx context.Context) auth.UserStore {
 	return userStore
 }
 
-func createAdminUser(t *testing.T, ctx context.Context, userStore auth.UserStore, org string) *auth.User {
+func createAdminUser(t *testing.T, ctx context.Context, userStore auth.UserStore, org auth.Org) *auth.User {
 	user := auth.CreateUserRequest{
 		FirstName: gofakeit.FirstName(),
 		LastName:  gofakeit.LastName(),
@@ -151,5 +409,9 @@ func createAdminUser(t *testing.T, ctx context.Context, userStore auth.UserStore
 	if err != nil {
 		t.Fatalf("error creating user: %v", err)
 	}
+
+	t.Cleanup(func() {
+		userStore.DeleteUserByEmail(ctx, u.Email) //nolint:errcheck,gosec
+	})
 	return u
 }

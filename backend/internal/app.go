@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"bz.moh.epi/users/internal/db"
 )
@@ -10,6 +11,7 @@ import (
 type App struct {
 	Firestore       *db.FirestoreClient
 	UserStore       *auth.UserStore
+	UserApi         *api.UserApi
 	ProjectID       string
 	FirestoreApiKey string
 }

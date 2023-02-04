@@ -60,12 +60,12 @@ func TestUserStore_CreateUser(t *testing.T) {
 		LastName:  "Guerra",
 		Email:     "uris77@gmail.com",
 		Role:      PeerNavigatorRole,
-		Org:       "BFLA",
+		Org:       BFLA,
 		CreatedBy: "some@mail.com",
 	}
 	userStore, _ := NewStore(firestoreClient, apiKey)
 
-	createUser(ctx, t, userStore, user) //nolint: errcheck
+	createUser(ctx, t, userStore, user) //nolint: errcheck,gosec
 
 }
 
@@ -80,7 +80,7 @@ func TestUserStore_UpdateUser(t *testing.T) {
 		FirstName: "Roberto",
 		LastName:  "Guerra",
 		Email:     "uris77@gmail.com",
-		Org:       "BFLA",
+		Org:       BFLA,
 		Role:      PeerNavigatorRole,
 		CreatedBy: "some@mailcom",
 	}
@@ -136,7 +136,7 @@ func TestUserStore_GetUserByID(t *testing.T) {
 		FirstName: "Roberto",
 		LastName:  "Guerra",
 		Email:     "uris77@gmail.com",
-		Org:       "BFLA",
+		Org:       BFLA,
 		Role:      PeerNavigatorRole,
 		CreatedBy: "some@mail.com",
 	}
@@ -169,7 +169,7 @@ func TestUserStore_CreateToken(t *testing.T) {
 		FirstName: "Roberto",
 		LastName:  "Guerra",
 		Email:     "uris77@gmail.com",
-		Org:       "BFLA",
+		Org:       BFLA,
 		Role:      PeerNavigatorRole,
 		CreatedBy: "some@mail.com",
 	}

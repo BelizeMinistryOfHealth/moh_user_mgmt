@@ -27,8 +27,12 @@ func (a *UserApi) CreateUser(ctx context.Context, user auth.CreateUserRequest) (
 	if createdBy.Role != auth.AdminRole && createdBy.Role != auth.SrRole {
 		return nil, fmt.Errorf("only admins can create users") //nolint: goerr113
 	}
-	if createdBy.Role == auth.SrRole && createdBy.Org != user.Org {
+	if createdBy.Org != user.Org && (createdBy.Org != auth.MOHW && createdBy.Org != auth.NAC) {
 		return nil, fmt.Errorf("only MOHW and NAC admins can create users for other organizations") //nolint: goerr113
+	}
+
+	if createdBy.Org == auth.NAC && user.Org == auth.MOHW {
+		return nil, fmt.Errorf("only MOHW admins can create users for MOHW") //nolint: goerr113
 	}
 
 	u, err := a.UserStore.CreateUser(ctx, user)

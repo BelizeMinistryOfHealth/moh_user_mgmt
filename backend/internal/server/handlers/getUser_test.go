@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"bz.moh.epi/users/internal/db"
 	"context"
@@ -39,11 +40,12 @@ func TestGetUser(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
+	userApi := api.CreateUserApi(userStore)
 	userRequest := auth.CreateUserRequest{
 		FirstName: "Roberto",
 		LastName:  "Guerra",
 		Email:     gofakeit.Email(),
-		Org:       "BFLA",
+		Org:       auth.BFLA,
 		Role:      auth.PeerNavigatorRole,
 		CreatedBy: "some@mail.com",
 	}
@@ -52,7 +54,7 @@ func TestGetUser(t *testing.T) {
 		t.Errorf("error creating user: %v", err)
 	}
 	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore)
+	userCrudService := NewUserCrudService(&userStore, userApi)
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users/%s", wantUser.ID), nil)
 	mids.Then(userCrudService.GetUserByID)(res, req)

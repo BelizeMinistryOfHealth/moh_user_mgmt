@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"bz.moh.epi/users/internal/db"
 	"context"
@@ -21,8 +22,9 @@ func TestUserCrudService_ListUsers_NonAdminNotAllowed(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
+	userApi := api.CreateUserApi(userStore)
 	mids := NewChain(verifyTokenNonAdmin())
-	userCrudService := NewUserCrudService(&userStore)
+	userCrudService := NewUserCrudService(&userStore, userApi)
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	mids.Then(userCrudService.ListUsers)(res, req)
@@ -39,8 +41,9 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 		t.Fatalf("failed to create firestore client: %v", err)
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
+	userApi := api.CreateUserApi(userStore)
 	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore)
+	userCrudService := NewUserCrudService(&userStore, userApi)
 	want := createMultipleUsers(ctx, userStore)
 	t.Cleanup(func() {
 		for i := range want {

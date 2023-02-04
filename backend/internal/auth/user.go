@@ -66,7 +66,7 @@ type User struct {
 	FirstName string      `json:"firstName" firestore:"firstName"`
 	LastName  string      `json:"lastName" firestore:"lastName"`
 	Email     string      `json:"email" firestore:"email"`
-	Org       string      `json:"org" firestore:"org"`
+	Org       Org         `json:"org" firestore:"org"`
 	Role      UserRole    `json:"role" firestore:"role"`
 	Enabled   bool        `json:"enabled" firestore:"enabled"`
 	CreatedAt time.Time   `json:"createdAt" firestore:"createdAt"`
@@ -89,14 +89,18 @@ type RawUser struct {
 func (u *RawUser) ToUser() (*User, error) {
 	role, err := ToUserRole(u.Role)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting from database user to domain User: %w", err)
+	}
+	org, err := ToOrg(u.Org)
+	if err != nil {
+		return nil, fmt.Errorf("error converting from database user to domain User: %w", err)
 	}
 	return &User{
 		ID:        u.ID,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
 		Email:     u.Email,
-		Org:       u.Org,
+		Org:       org,
 		Role:      role,
 		Enabled:   u.Enabled,
 		CreatedAt: u.CreatedAt,
@@ -109,7 +113,7 @@ type CreateUserRequest struct {
 	FirstName string   `json:"firstName" firestore:"firstName"`
 	LastName  string   `json:"lastName" firestore:"lastName"`
 	Email     string   `json:"email" firestore:"email"`
-	Org       string   `json:"org" firestore:"org"`
+	Org       Org      `json:"org" firestore:"org"`
 	Role      UserRole `json:"role" firestore:"role"`
 	CreatedBy string   `json:"createdBy" firestore:"createdBy"`
 }
@@ -159,7 +163,7 @@ func (s *UserStore) CreateUser(ctx context.Context, user CreateUserRequest) (*Us
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-		Org:       user.Org,
+		Org:       user.Org.String(),
 		Role:      user.Role.String(),
 		Enabled:   true,
 		CreatedAt: time.Now(),
@@ -323,7 +327,7 @@ func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
 		},
 		{
 			Path:  "org",
-			Value: user.Org,
+			Value: user.Org.String(),
 		},
 		{
 			Path:  "role",
@@ -361,7 +365,7 @@ func (s *UserStore) ListUsers(ctx context.Context) ([]User, error) {
 			}
 		}
 		var u RawUser
-		if err := doc.DataTo(&u); err != nil {
+		if err := doc.DataTo(&u); err != nil { //nolint:govet
 			return nil, UserError{
 				Reason: "failed to transform user data",
 				Inner:  err,
@@ -400,11 +404,14 @@ func (s *UserStore) VerifyToken(ctx context.Context, t string) (JwtToken, error)
 			Admin: false,
 		}, AuthError{Inner: err, Reason: "could not find user record with provided email"}
 	}
-	if user.Org == "" {
+	if user.Org < FirstOrg || user.Org > LastOrg {
 		return JwtToken{
-			Email: email.(string),
-			Admin: false,
-		}, nil
+				Email: email.(string),
+				Admin: false,
+			}, AuthError{
+				Reason: "Invalid user ",
+				Inner:  nil,
+			}
 	}
 	return JwtToken{
 		Email: email.(string),
@@ -418,11 +425,10 @@ func (s *UserStore) VerifyToken(ctx context.Context, t string) (JwtToken, error)
 // A user is admin if they are in the MOHW or NAC orgs or have the SR role.
 func IsAdmin(user User) bool {
 	// User is Admin if they are in the MOHW org
-	if user.Org == "MOHW" || user.Org == "NAC" {
-		return true
-	}
-	// User is Admin if they have the SR role
-	return user.Role == SrRole
+	//if user.Org == MOHW || user.Org == NAC {
+	//	return true
+	//}
+	return user.Role == AdminRole
 }
 
 func (s *UserStore) CreateToken(ctx context.Context, ID string) (string, error) {
@@ -438,7 +444,7 @@ func (s *UserStore) CreateToken(ctx context.Context, ID string) (string, error) 
 type JwtToken struct {
 	Email string
 	Admin bool
-	Org   string
+	Org   Org
 	Role  UserRole
 }
 
