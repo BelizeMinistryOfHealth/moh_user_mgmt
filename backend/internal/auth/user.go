@@ -14,38 +14,104 @@ import (
 	"google.golang.org/api/iterator"
 	"net/http"
 	"os"
+	"time"
 )
 
+type UserRole int
+
 const (
-	passwordReset   = "PASSWORD_RESET"
-	applicationName = "hiv_surveys"
+	passwordReset    = "PASSWORD_RESET"
+	createUserEvent  = "CREATE_USER"
+	updateUserEvent  = "UPDATE_USER"
+	deleteUserEvent  = "DELETE_USER"
+	disableUserEvent = "DISABLE_USER"
 )
+const (
+	SrRole UserRole = iota
+	PeerNavigatorRole
+	AdherenceCounselorRole
+	AdminRole
+)
+
+func (ur UserRole) String() string {
+	return [...]string{"SrRole", "PeerNavigatorRole", "AdherenceCounselorRole", "AdminRole"}[ur]
+}
+
+func ToUserRole(role string) (UserRole, error) {
+	switch role {
+	case "SrRole":
+		return SrRole, nil
+	case "PeerNavigatorRole":
+		return PeerNavigatorRole, nil
+	case "AdherenceCounselorRole":
+		return AdherenceCounselorRole, nil
+	case "AdminRole":
+		return AdminRole, nil
+	default:
+		return -1, fmt.Errorf("%s is an invalid role", role) //nolint: goerr113
+	}
+}
+
+// UserEvent is a record of an event that occurred for a user.
+// Users will include a list of these events in their profile.
+type UserEvent struct {
+	Name string    `json:"name" firestore:"name"`
+	Date time.Time `json:"date" firestore:"date"`
+	User string    `json:"user" firestore:"user"`
+}
 
 // User represents a user account in the system
 type User struct {
-	ID               string            `json:"id" firestore:"id"`
-	FirstName        string            `json:"firstName" firestore:"firstName"`
-	LastName         string            `json:"lastName" firestore:"lastName"`
-	Email            string            `json:"email" firestore:"email"`
-	UserApplications []UserApplication `json:"userApplications" firestore:"userApplications"`
+	ID        string      `json:"id" firestore:"id"`
+	FirstName string      `json:"firstName" firestore:"firstName"`
+	LastName  string      `json:"lastName" firestore:"lastName"`
+	Email     string      `json:"email" firestore:"email"`
+	Org       string      `json:"org" firestore:"org"`
+	Role      UserRole    `json:"role" firestore:"role"`
+	Enabled   bool        `json:"enabled" firestore:"enabled"`
+	CreatedAt time.Time   `json:"createdAt" firestore:"createdAt"`
+	UpdatedAt time.Time   `json:"updatedAt" firestore:"updatedAt"`
+	Events    []UserEvent `json:"events" firestore:"events"`
+}
+type RawUser struct {
+	ID        string      `json:"id" firestore:"id"`
+	FirstName string      `json:"firstName" firestore:"firstName"`
+	LastName  string      `json:"lastName" firestore:"lastName"`
+	Email     string      `json:"email" firestore:"email"`
+	Org       string      `json:"org" firestore:"org"`
+	Role      string      `json:"role" firestore:"role"`
+	Enabled   bool        `json:"enabled" firestore:"enabled"`
+	CreatedAt time.Time   `json:"createdAt" firestore:"createdAt"`
+	UpdatedAt time.Time   `json:"updatedAt" firestore:"updatedAt"`
+	Events    []UserEvent `json:"events" firestore:"events"`
+}
+
+func (u *RawUser) ToUser() (*User, error) {
+	role, err := ToUserRole(u.Role)
+	if err != nil {
+		return nil, err
+	}
+	return &User{
+		ID:        u.ID,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Email:     u.Email,
+		Org:       u.Org,
+		Role:      role,
+		Enabled:   u.Enabled,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+		Events:    u.Events,
+	}, nil
 }
 
 type CreateUserRequest struct {
-	FirstName        string            `json:"firstName" firestore:"firstName"`
-	LastName         string            `json:"lastName" firestore:"lastName"`
-	Email            string            `json:"email" firestore:"email"`
-	UserApplications []UserApplication `json:"userApplications" firestore:"userApplications"`
-}
-
-// IsAdmin indicates if a given slice of permissions has admin access
-func IsAdmin(permissions []string) bool {
-	isAdmin := false
-	for idx := range permissions {
-		if permissions[idx] == "admin" {
-			isAdmin = true
-		}
-	}
-	return isAdmin
+	FirstName string   `json:"firstName" firestore:"firstName"`
+	LastName  string   `json:"lastName" firestore:"lastName"`
+	Email     string   `json:"email" firestore:"email"`
+	Org       string   `json:"org" firestore:"org"`
+	Role      UserRole `json:"role" firestore:"role"`
+	CreatedBy string   `json:"createdBy" firestore:"createdBy"`
 }
 
 // UserService describes the contract that any service that will be used for persisting and querying users
@@ -88,12 +154,17 @@ func (s *UserStore) CreateUser(ctx context.Context, user CreateUserRequest) (*Us
 		}
 	}
 
-	userPayload := &User{
-		ID:               userRecord.UID,
-		FirstName:        user.FirstName,
-		LastName:         user.LastName,
-		Email:            user.Email,
-		UserApplications: user.UserApplications,
+	userPayload := &RawUser{
+		ID:        userRecord.UID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Org:       user.Org,
+		Role:      user.Role.String(),
+		Enabled:   true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Events:    []UserEvent{{Name: createUserEvent, Date: time.Now(), User: user.CreatedBy}},
 	}
 
 	//Create userRecord in firestore
@@ -110,7 +181,7 @@ func (s *UserStore) CreateUser(ctx context.Context, user CreateUserRequest) (*Us
 			Inner:  err,
 		}
 	}
-	return userPayload, nil
+	return userPayload.ToUser()
 }
 
 // SendPasswordResetEmail sends an email to the user with a link to reset their password.
@@ -165,22 +236,22 @@ func (s *UserStore) DeleteUser(ctx context.Context, user User) error {
 }
 
 // GetUserByEmail gets a user's record from firebase.
-func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, error) {
+func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	iter := s.db.Client.Collection(s.collection).Where("email", "==", email).Limit(1).Documents(ctx)
-	var user User
+	var user RawUser
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
-			return User{}, AuthError{
+			return nil, AuthError{
 				Reason: "failed to fetch user by email",
 				Inner:  err,
 			}
 		}
 		if err := doc.DataTo(&user); err != nil {
-			return User{}, AuthError{
+			return nil, AuthError{
 				Reason: "failed to convert user data",
 				Inner:  err,
 			}
@@ -190,13 +261,13 @@ func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (User, err
 	log.WithFields(log.Fields{
 		"user": *u,
 	}).Info("user from auth client")
-	return user, nil
+	return user.ToUser()
 }
 
 // GetUserByID retrieves a user with the matching id. It returns nil if no user is found.
 func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
 	iter := s.db.Client.Collection(s.collection).Where("id", "==", ID).Limit(1).Documents(ctx)
-	var user User
+	var user RawUser
 	for {
 		doc, err := iter.Next()
 		if errors.Is(err, iterator.Done) {
@@ -215,15 +286,32 @@ func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
 			}
 		}
 	}
-	return &user, nil
+	return user.ToUser()
+}
+
+// UpdateUserRequest is the request body for updating a user.
+type UpdateUserRequest struct {
+	ID        string      `json:"id"`
+	FirstName string      `json:"firstName"`
+	LastName  string      `json:"lastName"`
+	Org       string      `json:"org"`
+	Role      string      `json:"role"`
+	Events    []UserEvent `json:"events"`
+	UpdatedBy string      `json:"updatedBy"`
 }
 
 // UpdateUser updates a user's permissions.
 func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
-	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Update(ctx, []firestore.Update{
+	persistedUser, err := s.GetUserByID(ctx, user.ID)
+	if err != nil {
+		return fmt.Errorf("UpdateUser: failed to get user by id: %w", err)
+	}
+	events := persistedUser.Events
+	events = append(events, UserEvent{Name: updateUserEvent, Date: time.Now(), User: "system"})
+	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Update(ctx, []firestore.Update{ //nolint:govet
 		{
-			Path:  "userApplications",
-			Value: user.UserApplications,
+			Path:  "Events",
+			Value: events,
 		},
 		{
 			Path:  "firstName",
@@ -233,13 +321,21 @@ func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
 			Path:  "lastName",
 			Value: user.LastName,
 		},
+		{
+			Path:  "org",
+			Value: user.Org,
+		},
+		{
+			Path:  "role",
+			Value: user.Role.String(),
+		},
 	}); err != nil {
 		return AuthError{
 			Reason: "failed updating user collection",
 			Inner:  err,
 		}
 	}
-	_, err := s.authClient.UpdateUser(ctx, user.ID, (&auth.UserToUpdate{}).DisplayName(fmt.Sprintf("%s %s", user.FirstName, user.LastName)))
+	_, err = s.authClient.UpdateUser(ctx, user.ID, (&auth.UserToUpdate{}).DisplayName(fmt.Sprintf("%s %s", user.FirstName, user.LastName)))
 	if err != nil {
 		return AuthError{
 			Reason: "failed to update user's name",
@@ -264,14 +360,21 @@ func (s *UserStore) ListUsers(ctx context.Context) ([]User, error) {
 				Inner:  err,
 			}
 		}
-		var u User
+		var u RawUser
 		if err := doc.DataTo(&u); err != nil {
 			return nil, UserError{
 				Reason: "failed to transform user data",
 				Inner:  err,
 			}
 		}
-		users = append(users, u)
+		user, err := u.ToUser()
+		if err != nil {
+			return nil, UserError{
+				Reason: "failed to convert raw user to user",
+				Inner:  err,
+			}
+		}
+		users = append(users, *user)
 	}
 	return users, nil
 }
@@ -293,40 +396,35 @@ func (s *UserStore) VerifyToken(ctx context.Context, t string) (JwtToken, error)
 	user, err := s.GetUserByEmail(ctx, email.(string))
 	if err != nil {
 		return JwtToken{
-			Email:       email.(string),
-			Permissions: nil,
+			Email: email.(string),
+			Admin: false,
 		}, AuthError{Inner: err, Reason: "could not find user record with provided email"}
 	}
-	applications := user.UserApplications
-	if applications == nil {
+	if user.Org == "" {
 		return JwtToken{
-			Email:       email.(string),
-			Admin:       false,
-			Permissions: nil,
+			Email: email.(string),
+			Admin: false,
 		}, nil
 	}
-	applicationPermissions := findApplication(user.UserApplications, applicationName)
-	var permissions []string
-	if applicationPermissions != nil && len(applicationPermissions.Permissions) > 0 {
-		permissions = append(permissions, applicationPermissions.Permissions...)
-	}
 	return JwtToken{
-		Email:       email.(string),
-		Admin:       IsAdmin(permissions),
-		Permissions: permissions,
+		Email: email.(string),
+		Admin: IsAdmin(*user),
+		Org:   user.Org,
+		Role:  user.Role,
 	}, nil
 }
 
-func findApplication(apps []UserApplication, appName string) *UserApplication {
-	for i := 0; i < len(apps); i++ {
-		if apps[i].Name == appName {
-			return &apps[i]
-		}
+// IsAdmin indicates if a user has admin permissions.
+// A user is admin if they are in the MOHW or NAC orgs or have the SR role.
+func IsAdmin(user User) bool {
+	// User is Admin if they are in the MOHW org
+	if user.Org == "MOHW" || user.Org == "NAC" {
+		return true
 	}
-	return nil
+	// User is Admin if they have the SR role
+	return user.Role == SrRole
 }
 
-// CreateToken creates a token for a user that matches the ID provided.
 func (s *UserStore) CreateToken(ctx context.Context, ID string) (string, error) {
 	token, err := s.authClient.CustomToken(ctx, ID)
 	if err != nil {
@@ -338,9 +436,10 @@ func (s *UserStore) CreateToken(ctx context.Context, ID string) (string, error) 
 
 // JwtToken represents a JWT token that has been verified
 type JwtToken struct {
-	Email       string
-	Admin       bool
-	Permissions []string
+	Email string
+	Admin bool
+	Org   string
+	Role  UserRole
 }
 
 // DeleteUserByID deletes a user from the data store

@@ -7,19 +7,20 @@ import (
 	"encoding/json"
 	firebase "firebase.google.com/go/v4"
 	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func createUser(ctx context.Context, t *testing.T, userStore auth.UserStore, user auth.CreateUserRequest) *auth.User {
+func createUser(ctx context.Context, t *testing.T, userStore auth.UserStore, user auth.CreateUserRequest) (*auth.User, error) {
 	u, err := userStore.CreateUser(ctx, user)
 	if err != nil {
-		t.Errorf("error creating user: %v", err)
+		return nil, fmt.Errorf("error creating user: %w", err)
 	}
 
 	if u == nil {
-		t.Errorf("want: a non nil user, got nil")
+		return nil, fmt.Errorf("want: a non nil user, got nil") //nolint: goerr113
 	}
 
 	t.Cleanup(func() {
@@ -28,7 +29,7 @@ func createUser(ctx context.Context, t *testing.T, userStore auth.UserStore, use
 			t.Errorf("cleaning up user failed: %v", err)
 		}
 	})
-	return u
+	return u, nil
 }
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
@@ -39,12 +40,17 @@ func TestGetUser(t *testing.T) {
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
 	userRequest := auth.CreateUserRequest{
-		FirstName:        "Roberto",
-		LastName:         "Guerra",
-		Email:            "uris77@gmail.com",
-		UserApplications: []auth.UserApplication{},
+		FirstName: "Roberto",
+		LastName:  "Guerra",
+		Email:     gofakeit.Email(),
+		Org:       "BFLA",
+		Role:      auth.PeerNavigatorRole,
+		CreatedBy: "some@mail.com",
 	}
-	wantUser := createUser(ctx, t, userStore, userRequest)
+	wantUser, err := createUser(ctx, t, userStore, userRequest)
+	if err != nil {
+		t.Errorf("error creating user: %v", err)
+	}
 	mids := NewChain(verifyTokenAdmin())
 	userCrudService := NewUserCrudService(&userStore)
 	res := httptest.NewRecorder()

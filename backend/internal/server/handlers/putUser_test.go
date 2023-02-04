@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	firebase "firebase.google.com/go/v4"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
+	"github.com/brianvoe/gofakeit/v6"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -25,19 +25,25 @@ func TestPutUser_FailsIfNotAdmin(t *testing.T) {
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
 	mids := NewChain(verifyTokenNonAdmin())
 	userCrudService := NewUserCrudService(&userStore)
+	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
-		FirstName:        "Dan",
-		LastName:         "Th",
-		Email:            "dan@th.com",
-		UserApplications: nil,
+		FirstName: "Dan",
+		LastName:  "Th",
+		Email:     email,
+		Org:       "BFLA",
+		Role:      auth.PeerNavigatorRole,
 	}
-	usr := createUser(ctx, t, userStore, createRequest)
+	usr, err := createUser(ctx, t, userStore, createRequest)
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
 
 	putBody := PutUserRequest{
-		FirstName:    "Dan",
-		LastName:     "Don",
-		Email:        "dan@th.com",
-		Applications: nil,
+		FirstName: "Dan",
+		LastName:  "Don",
+		Email:     email,
+		Org:       "BFLA",
+		Role:      "SR",
 	}
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/users/%s", usr.ID), putRequestToJSON(putBody))
@@ -57,19 +63,25 @@ func TestPutUser_Success(t *testing.T) {
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
 	mids := NewChain(verifyTokenAdmin())
 	userCrudService := NewUserCrudService(&userStore)
+	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
-		FirstName:        "Dan",
-		LastName:         "Th",
-		Email:            "dan@th.com",
-		UserApplications: nil,
+		FirstName: "Dan",
+		LastName:  "Th",
+		Email:     email,
+		Org:       "BFLA",
+		Role:      auth.SrRole,
 	}
-	usr := createUser(ctx, t, userStore, createRequest)
+	usr, err := createUser(ctx, t, userStore, createRequest)
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
 
 	putBody := PutUserRequest{
-		FirstName:    "Dan",
-		LastName:     "Th",
-		Email:        "dan@th.com",
-		Applications: nil,
+		FirstName: "Dan",
+		LastName:  "Th",
+		Email:     email,
+		Org:       "BFLA",
+		Role:      "PeerNavigatorRole",
 	}
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/users/%s", usr.ID), putRequestToJSON(putBody))
@@ -83,7 +95,7 @@ func TestPutUser_Success(t *testing.T) {
 		t.Errorf("Updating user failed want: %s; got: %s", wantUser.LastName, putBody.LastName)
 	}
 }
-func TestPutUser_UpdatesApplications(t *testing.T) {
+func TestPutUser_UpdatesRoles(t *testing.T) {
 	ctx := context.Background()
 	firebaseConfig := &firebase.Config{ProjectID: projectID}
 	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
@@ -93,23 +105,25 @@ func TestPutUser_UpdatesApplications(t *testing.T) {
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
 	mids := NewChain(verifyTokenAdmin())
 	userCrudService := NewUserCrudService(&userStore)
+	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
-		FirstName:        "Dan",
-		LastName:         "Th",
-		Email:            "dan@th.com",
-		UserApplications: nil,
+		FirstName: "Dan",
+		LastName:  "Th",
+		Email:     email,
+		Org:       "BFLA",
+		Role:      auth.PeerNavigatorRole,
 	}
-	usr := createUser(ctx, t, userStore, createRequest)
+	usr, err := createUser(ctx, t, userStore, createRequest)
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
 
 	putBody := PutUserRequest{
 		FirstName: "Dan",
 		LastName:  "Th",
-		Email:     "dan@th.com",
-		Applications: []auth.UserApplication{
-			{ApplicationID: "app1",
-				Name:        "app",
-				Permissions: []string{"read"},
-			}},
+		Email:     email,
+		Org:       "BFLA",
+		Role:      "AdherenceCounselorRole",
 	}
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/users/%s", usr.ID), putRequestToJSON(putBody))
@@ -118,9 +132,9 @@ func TestPutUser_UpdatesApplications(t *testing.T) {
 	if res.Code != 200 {
 		t.Errorf("want: %d; got: %d", 200, res.Code)
 	}
-	wantUser, _ := userStore.GetUserByID(ctx, usr.ID)
-	if diff := cmp.Diff(wantUser.UserApplications, putBody.Applications); diff != "" {
-		t.Errorf("Updating user applications failed want: %s; got: %s", wantUser.UserApplications, putBody.Applications)
+	gotUser, _ := userStore.GetUserByID(ctx, usr.ID)
+	if gotUser.Role.String() != putBody.Role {
+		t.Errorf("Updating user failed got: %s; want: %s", gotUser.Role, putBody.Role)
 	}
 }
 

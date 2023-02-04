@@ -21,9 +21,10 @@ func verifyTokenNonAdmin() Middleware {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := auth.JwtToken{
-				Email:       "me@mail.com",
-				Admin:       false,
-				Permissions: nil,
+				Email: "me@mail.com",
+				Admin: false,
+				Org:   "BFLA",
+				Role:  auth.PeerNavigatorRole,
 			}
 			ctx := context.WithValue(r.Context(), "authToken", t) //nolint: staticcheck
 			f(w, r.WithContext(ctx))
@@ -41,10 +42,11 @@ func TestPostUser_FailsIfNotAdmin(t *testing.T) {
 	mids := NewChain(verifyTokenNonAdmin())
 	userCrudService := NewUserCrudService(&userStore)
 	postBody := PostUserRequest{
-		FirstName:    "Dan",
-		LastName:     "Th",
-		Email:        "dan@th.com",
-		Applications: nil,
+		FirstName: "Dan",
+		LastName:  "Th",
+		Email:     "dan@th.com",
+		Role:      "PeerNavigatorRole",
+		Org:       "BFLA",
 	}
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/user", userToJSON(postBody))
@@ -58,9 +60,10 @@ func verifyTokenAdmin() Middleware {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := auth.JwtToken{
-				Email:       "me@mail.com",
-				Admin:       true,
-				Permissions: nil,
+				Email: "me@mail.com",
+				Admin: true,
+				Org:   "BFLA",
+				Role:  auth.SrRole,
 			}
 			ctx := context.WithValue(r.Context(), "authToken", t) //nolint: staticcheck
 			f(w, r.WithContext(ctx))
@@ -78,10 +81,11 @@ func TestPostUser_Success(t *testing.T) {
 	mids := NewChain(verifyTokenAdmin())
 	userCrudService := NewUserCrudService(&userStore)
 	postBody := PostUserRequest{
-		FirstName:    "Dan",
-		LastName:     "Th",
-		Email:        "dan@th.com",
-		Applications: nil,
+		FirstName: "Dan",
+		LastName:  "Th",
+		Email:     "dan@th.com",
+		Role:      "PeerNavigatorRole",
+		Org:       "BFLA",
 	}
 	t.Cleanup(func() {
 		userCrudService.UserStore.DeleteUserByEmail(ctx, postBody.Email) //nolint:errcheck,gosec

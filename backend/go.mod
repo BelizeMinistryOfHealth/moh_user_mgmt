@@ -5,6 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/firestore v1.8.0
 	firebase.google.com/go/v4 v4.10.0
+	github.com/brianvoe/gofakeit/v6 v6.20.1
 	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0

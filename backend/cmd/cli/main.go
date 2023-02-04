@@ -41,10 +41,9 @@ func main() {
 	}
 	userStore, _ := auth.NewStore(firestoreClient, apiKey)
 	userRequest := auth.CreateUserRequest{
-		FirstName:        firstName,
-		LastName:         lastName,
-		Email:            email,
-		UserApplications: []auth.UserApplication{{ApplicationID: "1", Name: "hiv_survey", Permissions: []string{"admin"}}},
+		FirstName: firstName,
+		LastName:  lastName,
+		Email:     email,
 	}
 	_, err = userStore.CreateUser(ctx, userRequest)
 	if err != nil {

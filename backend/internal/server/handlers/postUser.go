@@ -9,10 +9,11 @@ import (
 
 // PostUserRequest is the payload that is expected by the handler that creates a new user
 type PostUserRequest struct {
-	FirstName    string                 `json:"firstName"`
-	LastName     string                 `json:"lastName"`
-	Email        string                 `json:"email"`
-	Applications []auth.UserApplication `json:"applications"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Role      string `json:"role"`
+	Org       string `json:"org"`
 }
 
 // PostUser is the handler for creating a new user
@@ -32,7 +33,7 @@ func (s *UserCrudService) PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Get the body
-	var requestPayload auth.CreateUserRequest
+	var requestPayload PostUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestPayload); err != nil {
 		log.WithFields(log.Fields{
 			"body": r.Body,
@@ -41,7 +42,26 @@ func (s *UserCrudService) PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.UserStore.CreateUser(r.Context(), requestPayload)
+	role, err := auth.ToUserRole(requestPayload.Role)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"body": r.Body,
+			"user": requestPayload,
+		}).WithError(err).Error("Invalid User Role")
+		http.Error(w, "User Role provided is not valid", http.StatusBadRequest)
+		return
+	}
+
+	createRequest := auth.CreateUserRequest{
+		FirstName: requestPayload.FirstName,
+		LastName:  requestPayload.LastName,
+		Email:     requestPayload.Email,
+		Org:       requestPayload.Org,
+		Role:      role,
+		CreatedBy: token.Email,
+	}
+
+	user, err := s.UserStore.CreateUser(r.Context(), createRequest)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"body": r.Body,

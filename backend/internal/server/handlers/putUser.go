@@ -9,10 +9,11 @@ import (
 )
 
 type PutUserRequest struct {
-	FirstName    string                 `json:"firstName"`
-	LastName     string                 `json:"lastName"`
-	Email        string                 `json:"email"`
-	Applications []auth.UserApplication `json:"applications"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+	Org       string `json:"org"`
+	Role      string `json:"role"`
 }
 
 func (s *UserCrudService) PutUser(w http.ResponseWriter, r *http.Request) {
@@ -45,12 +46,23 @@ func (s *UserCrudService) PutUser(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(path, "/")
 	id := paths[len(paths)-1]
 
+	role, err := auth.ToUserRole(requestPayload.Role)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"body": r.Body,
+			"user": requestPayload,
+		}).WithError(err).Error("Invalid User Role")
+		http.Error(w, "User Role provided is no valid", http.StatusBadRequest)
+		return
+	}
+
 	var user = auth.User{
-		ID:               id,
-		FirstName:        requestPayload.FirstName,
-		LastName:         requestPayload.LastName,
-		Email:            requestPayload.Email,
-		UserApplications: requestPayload.Applications,
+		ID:        id,
+		FirstName: requestPayload.FirstName,
+		LastName:  requestPayload.LastName,
+		Email:     requestPayload.Email,
+		Org:       requestPayload.Org,
+		Role:      role,
 	}
 	if err := s.UserStore.UpdateUser(r.Context(), &user); err != nil {
 		log.WithFields(log.Fields{
