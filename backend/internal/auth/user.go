@@ -261,6 +261,9 @@ func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (*User, er
 			}
 		}
 	}
+	if user.ID == "" {
+		return nil, fmt.Errorf("user not found with email %s", email) //nolint:goerr113
+	}
 	u, _ := s.authClient.GetUser(ctx, user.ID)
 	log.WithFields(log.Fields{
 		"user": *u,

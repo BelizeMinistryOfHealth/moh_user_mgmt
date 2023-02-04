@@ -24,7 +24,7 @@ func (a *UserApi) CreateUser(ctx context.Context, user auth.CreateUserRequest) (
 		return nil, fmt.Errorf("error verifying person creating new user: %w", err)
 	}
 
-	if createdBy.Role != auth.AdminRole && createdBy.Role != auth.SrRole {
+	if createdBy.Role != auth.AdminRole {
 		return nil, fmt.Errorf("only admins can create users") //nolint: goerr113
 	}
 	if createdBy.Org != user.Org && (createdBy.Org != auth.MOHW && createdBy.Org != auth.NAC) {

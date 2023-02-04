@@ -82,6 +82,44 @@ func TestCreateUserApi_NAC_AdminsCanNotCreateMOHWUsers(t *testing.T) {
 	}
 }
 
+func TestCreateUserApi_RequestorMustExistInDatabase(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	createRequest := auth.CreateUserRequest{
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
+		Email:     gofakeit.Email(),
+		Org:       auth.MOHW,
+		Role:      auth.AdminRole,
+		CreatedBy: gofakeit.Email(),
+	}
+	_, err := userApi.CreateUser(ctx, createRequest)
+	if err == nil {
+		t.Errorf("CreateUser() should return an error because requestor is not in database ")
+	}
+}
+
+func TestCreateUserApi_NonAdminRolesCanNotCreateUsers(t *testing.T) {
+	ctx := context.Background()
+	userStore := createUserStore(t, ctx)
+	userApi := CreateUserApi(userStore)
+	nonAdminUser := createNonAdminUser(t, ctx, userStore, auth.MOHW)
+	createRequest := auth.CreateUserRequest{
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
+		Email:     gofakeit.Email(),
+		Org:       auth.MOHW,
+		Role:      auth.SrRole,
+		CreatedBy: nonAdminUser.Email,
+	}
+	_, err := userApi.CreateUser(ctx, createRequest)
+	if err == nil {
+		t.Errorf("CreateUser() should return an error because non admin can not create users")
+	}
+
+}
+
 func TestCreateUserApi_MOHW_AdminsCanCreateUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
@@ -403,6 +441,25 @@ func createAdminUser(t *testing.T, ctx context.Context, userStore auth.UserStore
 		Email:     gofakeit.Email(),
 		Org:       org,
 		Role:      auth.AdminRole,
+		CreatedBy: gofakeit.Email(),
+	}
+	u, err := userStore.CreateUser(ctx, user)
+	if err != nil {
+		t.Fatalf("error creating user: %v", err)
+	}
+
+	t.Cleanup(func() {
+		userStore.DeleteUserByEmail(ctx, u.Email) //nolint:errcheck,gosec
+	})
+	return u
+}
+func createNonAdminUser(t *testing.T, ctx context.Context, userStore auth.UserStore, org auth.Org) *auth.User {
+	user := auth.CreateUserRequest{
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
+		Email:     gofakeit.Email(),
+		Org:       org,
+		Role:      auth.PeerNavigatorRole,
 		CreatedBy: gofakeit.Email(),
 	}
 	u, err := userStore.CreateUser(ctx, user)
