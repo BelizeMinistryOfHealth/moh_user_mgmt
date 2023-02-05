@@ -19,20 +19,6 @@ import (
 var apiKey = os.Getenv("API_KEY")       //nolint: gochecknoglobals
 var projectID = os.Getenv("PROJECT_ID") //nolint: gochecknoglobals
 
-func verifyTokenNonAdmin() Middleware {
-	return func(f http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			t := auth.JwtToken{
-				Email: "me@mail.com",
-				Admin: false,
-				Org:   auth.BFLA,
-				Role:  auth.PeerNavigatorRole,
-			}
-			ctx := context.WithValue(r.Context(), "authToken", t) //nolint: staticcheck
-			f(w, r.WithContext(ctx))
-		}
-	}
-}
 func TestPostUser_FailsIfNotAdmin(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)

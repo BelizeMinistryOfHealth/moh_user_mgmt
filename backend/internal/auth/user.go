@@ -17,8 +17,6 @@ import (
 	"time"
 )
 
-type UserRole int
-
 const (
 	passwordReset    = "PASSWORD_RESET"
 	createUserEvent  = "CREATE_USER"
@@ -26,31 +24,6 @@ const (
 	deleteUserEvent  = "DELETE_USER"
 	disableUserEvent = "DISABLE_USER"
 )
-const (
-	SrRole UserRole = iota
-	PeerNavigatorRole
-	AdherenceCounselorRole
-	AdminRole
-)
-
-func (ur UserRole) String() string {
-	return [...]string{"SrRole", "PeerNavigatorRole", "AdherenceCounselorRole", "AdminRole"}[ur]
-}
-
-func ToUserRole(role string) (UserRole, error) {
-	switch role {
-	case "SrRole":
-		return SrRole, nil
-	case "PeerNavigatorRole":
-		return PeerNavigatorRole, nil
-	case "AdherenceCounselorRole":
-		return AdherenceCounselorRole, nil
-	case "AdminRole":
-		return AdminRole, nil
-	default:
-		return -1, fmt.Errorf("%s is an invalid role", role) //nolint: goerr113
-	}
-}
 
 // UserEvent is a record of an event that occurred for a user.
 // Users will include a list of these events in their profile.
@@ -296,17 +269,6 @@ func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
 	return user.ToUser()
 }
 
-// UpdateUserRequest is the request body for updating a user.
-//type UpdateUserRequest struct {
-//	ID        string      `json:"id"`
-//	FirstName string      `json:"firstName"`
-//	LastName  string      `json:"lastName"`
-//	Org       string      `json:"org"`
-//	Role      string      `json:"role"`
-//	Events    []UserEvent `json:"events"`
-//	UpdatedBy string      `json:"updatedBy"`
-//}
-
 // UpdateUser updates a user's permissions.
 func (s *UserStore) UpdateUser(ctx context.Context, user *User, email string) error {
 	persistedUser, err := s.GetUserByID(ctx, user.ID)
@@ -355,6 +317,74 @@ func (s *UserStore) UpdateUser(ctx context.Context, user *User, email string) er
 // ListUsers will return a list of all users stored in the data store.
 func (s *UserStore) ListUsers(ctx context.Context) ([]User, error) {
 	iter := s.db.Client.Collection(s.collection).Documents(ctx)
+	var users []User
+	for {
+		doc, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, UserError{
+				Reason: "failed iterating over user collection",
+				Inner:  err,
+			}
+		}
+		var u RawUser
+		if err := doc.DataTo(&u); err != nil { //nolint:govet
+			return nil, UserError{
+				Reason: "failed to transform user data",
+				Inner:  err,
+			}
+		}
+		user, err := u.ToUser()
+		if err != nil {
+			return nil, UserError{
+				Reason: "failed to convert raw user to user",
+				Inner:  err,
+			}
+		}
+		users = append(users, *user)
+	}
+	return users, nil
+}
+
+// ListUsersNotInOrg will return a list of all users not in the specified org.
+func (s *UserStore) ListUsersNotInOrg(ctx context.Context, org Org) ([]User, error) {
+	iter := s.db.Client.Collection(s.collection).Where("org", "!=", org.String()).Documents(ctx)
+	var users []User
+	for {
+		doc, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, UserError{
+				Reason: "failed iterating over user collection",
+				Inner:  err,
+			}
+		}
+		var u RawUser
+		if err := doc.DataTo(&u); err != nil { //nolint:govet
+			return nil, UserError{
+				Reason: "failed to transform user data",
+				Inner:  err,
+			}
+		}
+		user, err := u.ToUser()
+		if err != nil {
+			return nil, UserError{
+				Reason: "failed to convert raw user to user",
+				Inner:  err,
+			}
+		}
+		users = append(users, *user)
+	}
+	return users, nil
+}
+
+// ListUsersByOrg will return a list of all users in the specified org.
+func (s *UserStore) ListUsersByOrg(ctx context.Context, org Org) ([]User, error) {
+	iter := s.db.Client.Collection(s.collection).Where("org", "==", org.String()).Documents(ctx)
 	var users []User
 	for {
 		doc, err := iter.Next()

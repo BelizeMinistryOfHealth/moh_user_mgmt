@@ -3,11 +3,9 @@ package handlers
 import (
 	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
-	"bz.moh.epi/users/internal/db"
 	"context"
 	"encoding/json"
-	firebase "firebase.google.com/go/v4"
-	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
 	"net/http"
 	"net/http/httptest"
 	"sort"
@@ -16,15 +14,11 @@ import (
 
 func TestUserCrudService_ListUsers_NonAdminNotAllowed(t *testing.T) {
 	ctx := context.Background()
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	userStore, _ := auth.NewStore(firestoreClient, apiKey)
-	userApi := api.CreateUserApi(userStore)
-	mids := NewChain(verifyTokenNonAdmin())
-	userCrudService := NewUserCrudService(&userStore, userApi)
+	userStore := createUserStore(t, ctx)
+	userApi := api.CreateUserApi(*userStore)
+	nonAdminUser := createTestUser(t, *userStore, auth.CSO, auth.SrRole)
+	mids := NewChain(verifyUserToken(*nonAdminUser))
+	userCrudService := NewUserCrudService(userStore, userApi)
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	mids.Then(userCrudService.ListUsers)(res, req)
@@ -35,21 +29,24 @@ func TestUserCrudService_ListUsers_NonAdminNotAllowed(t *testing.T) {
 
 func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	ctx := context.Background()
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	userStore, _ := auth.NewStore(firestoreClient, apiKey)
-	userApi := api.CreateUserApi(userStore)
-	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore, userApi)
-	want := createMultipleUsers(ctx, userStore)
+	userStore := createUserStore(t, ctx)
+	userApi := api.CreateUserApi(*userStore)
+	adminUser := createTestUser(t, *userStore, auth.CSO, auth.AdminRole)
+	mids := NewChain(verifyUserToken(*adminUser))
+	userCrudService := NewUserCrudService(userStore, userApi)
+	// This user should not be included the results
+	createTestUser(t, *userStore, auth.BFLA, auth.SrRole)
+	createdUsers := createMultipleUsers(ctx, *userStore)
 	t.Cleanup(func() {
-		for i := range want {
-			userStore.DeleteUserByID(ctx, want[i].ID) //nolint:errcheck,gosec
+		for i := range createdUsers {
+			userStore.DeleteUserByID(ctx, createdUsers[i].ID) //nolint:errcheck,gosec
 		}
 	})
+	// Add the admin user to the list of users that we expect to be returned.
+	var want []auth.User
+	want = append(want, createdUsers...)
+	want = append(want, *adminUser)
+	//t.Logf("want: %v ; size: %d createdUsers: %d", want, len(want), len(createdUsers))
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	mids.Then(userCrudService.ListUsers)(res, req)
@@ -57,7 +54,7 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 		t.Errorf("Status Code | want: %d; got: %d", 200, res.Code)
 	}
 	var got []auth.User
-	if err = json.Unmarshal(res.Body.Bytes(), &got); err != nil {
+	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
 		t.Fatalf("failed to unarmshal users (%v): %v", res.Body, err)
 	}
 	// Sort the slices so that they can be compared. Otherwise, even if the values are the same,
@@ -68,21 +65,29 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	sort.Slice(want, func(i, j int) bool {
 		return want[i].Email < got[j].Email
 	})
-	//if len(got) != len(want) {
-	//	t.Fatalf("Unexpected number of users want: %d; got: %d", len(want), len(got))
-	//}
-	//if diff := cmp.Diff(want, got); diff != "" {
-	//	t.Errorf("want: %v;\n got: %v", want, got)
-	//}
+	if len(got) != len(want) {
+		t.Fatalf("Unexpected number of users want: %d; got: %d", len(want), len(got))
+	}
+	var nonCSOUsers []auth.User
+	for i := range got {
+		if got[i].Org != auth.CSO {
+			nonCSOUsers = append(nonCSOUsers, got[i])
+		}
+	}
+	if len(nonCSOUsers) > 0 {
+		t.Fatalf("Non CSO users returned: %v", nonCSOUsers)
+	}
 }
 
 func createMultipleUsers(ctx context.Context, s auth.UserStore) []auth.User {
 	var users []auth.User
 	for i := 0; i < 5; i++ {
 		req := auth.CreateUserRequest{
-			FirstName: fmt.Sprintf("first'Name%d", i),
-			LastName:  "LastName",
-			Email:     fmt.Sprintf("%d@mail.com", i),
+			FirstName: gofakeit.FirstName(),
+			LastName:  gofakeit.LastName(),
+			Email:     gofakeit.Email(),
+			Org:       auth.CSO,
+			Role:      auth.SrRole,
 		}
 		user, err := s.CreateUser(ctx, req)
 		if err == nil {

@@ -6,10 +6,13 @@ import (
 	"fmt"
 )
 
+// UserApi is the API for user management
+// It is responsible for all the business logic related to user management.
 type UserApi struct {
 	UserStore auth.UserStore
 }
 
+// CreateUserApi creates a new UserApi
 func CreateUserApi(userStore auth.UserStore) *UserApi {
 	return &UserApi{
 		UserStore: userStore,
@@ -34,11 +37,17 @@ func (a *UserApi) CreateUser(ctx context.Context, user auth.CreateUserRequest) (
 	return u, nil
 }
 
+// UpdateUserRequest is the request to update a user.
 type UpdateUserRequest struct {
-	User      *auth.User
+	// User is the user to update.
+	User *auth.User
+	// UpdatedBy is the email of the account making this update
 	UpdatedBy string
 }
 
+// UpdateUser updates a user. Only admins are allowed to update users. Only admins can update users for their
+// respective organizations. Admin users for NAC and MOHW can update users for any organization.
+// Admin users cannot change their own role.
 func (a *UserApi) UpdateUser(ctx context.Context, request UpdateUserRequest) error {
 	err := a.checkUserPermissions(ctx, permissionRequest{
 		Org:         request.User.Org,
@@ -61,6 +70,35 @@ func (a *UserApi) UpdateUser(ctx context.Context, request UpdateUserRequest) err
 	}
 
 	return nil
+}
+
+// ListUsers lists all users. Only admins are allowed to list users. Only admins can list users for their
+// respective organizations. Admin users for NAC and MOHW can list users for any organization.
+// NAC users can not list MOHW users.
+func (a *UserApi) ListUsers(ctx context.Context, email string) ([]auth.User, error) {
+	requestedBy, err := a.UserStore.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("error verifying person listing users: %w", err)
+	}
+	if requestedBy.Org == auth.MOHW {
+		users, err := a.UserStore.ListUsers(ctx) //nolint:govet
+		if err != nil {
+			return nil, fmt.Errorf("error listing users for an MOHW user: %w", err)
+		}
+		return users, nil
+	}
+	if requestedBy.Org == auth.NAC {
+		users, err := a.UserStore.ListUsersNotInOrg(ctx, auth.MOHW) //nolint:govet
+		if err != nil {
+			return nil, fmt.Errorf("error listing users for a NAC user: %w", err)
+		}
+		return users, nil
+	}
+	users, err := a.UserStore.ListUsersByOrg(ctx, requestedBy.Org) //nolint: goerr113,govet
+	if err != nil {
+		return nil, fmt.Errorf("error listing users by org: %w", err)
+	}
+	return users, nil
 }
 
 type permissionRequest struct {

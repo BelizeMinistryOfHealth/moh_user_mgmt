@@ -24,7 +24,7 @@ func (s *UserCrudService) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := s.UserStore.ListUsers(r.Context())
+	users, err := s.UserApi.ListUsers(r.Context(), token.Email)
 	if err != nil {
 		log.WithError(err).Error("error retrieving users from the user store")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
