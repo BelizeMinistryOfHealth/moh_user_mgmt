@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
-	"bz.moh.epi/users/internal/db"
 	"context"
 	"encoding/json"
-	firebase "firebase.google.com/go/v4"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
 	"io"
@@ -18,31 +16,27 @@ import (
 
 func TestPutUser_FailsIfNotAdmin(t *testing.T) {
 	ctx := context.Background()
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	userStore, _ := auth.NewStore(firestoreClient, apiKey)
-	userApi := api.CreateUserApi(userStore)
-	mids := NewChain(verifyTokenNonAdmin())
-	userCrudService := NewUserCrudService(&userStore, userApi)
+	userStore := createUserStore(t, ctx)
+	userApi := api.CreateUserApi(*userStore)
+	nonAdminUser := createTestUser(t, *userStore, auth.BFLA, auth.PeerNavigatorRole)
+	mids := NewChain(verifyUserToken(*nonAdminUser))
+	userCrudService := NewUserCrudService(userStore, userApi)
 	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
-		FirstName: "Dan",
-		LastName:  "Th",
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
 		Email:     email,
 		Org:       auth.BFLA,
 		Role:      auth.PeerNavigatorRole,
 	}
-	usr, err := createUser(ctx, t, userStore, createRequest)
+	usr, err := createUser(ctx, t, *userStore, createRequest)
 	if err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
 
 	putBody := PutUserRequest{
-		FirstName: "Dan",
-		LastName:  "Don",
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
 		Email:     email,
 		Org:       "BFLA",
 		Role:      "SR",
@@ -57,15 +51,11 @@ func TestPutUser_FailsIfNotAdmin(t *testing.T) {
 }
 func TestPutUser_Success(t *testing.T) {
 	ctx := context.Background()
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	userStore, _ := auth.NewStore(firestoreClient, apiKey)
-	userApi := api.CreateUserApi(userStore)
-	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore, userApi)
+	userStore := createUserStore(t, ctx)
+	userApi := api.CreateUserApi(*userStore)
+	adminUser := createTestUser(t, *userStore, auth.BFLA, auth.AdminRole)
+	mids := NewChain(verifyUserToken(*adminUser))
+	userCrudService := NewUserCrudService(userStore, userApi)
 	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
 		FirstName: "Dan",
@@ -74,7 +64,7 @@ func TestPutUser_Success(t *testing.T) {
 		Org:       auth.BFLA,
 		Role:      auth.SrRole,
 	}
-	usr, err := createUser(ctx, t, userStore, createRequest)
+	usr, err := createUser(ctx, t, *userStore, createRequest)
 	if err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}
@@ -103,15 +93,11 @@ func TestPutUser_Success(t *testing.T) {
 }
 func TestPutUser_UpdatesRoles(t *testing.T) {
 	ctx := context.Background()
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	userStore, _ := auth.NewStore(firestoreClient, apiKey)
-	userApi := api.CreateUserApi(userStore)
-	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore, userApi)
+	userStore := createUserStore(t, ctx)
+	userApi := api.CreateUserApi(*userStore)
+	adminUser := createTestUser(t, *userStore, auth.BFLA, auth.AdminRole)
+	mids := NewChain(verifyUserToken(*adminUser))
+	userCrudService := NewUserCrudService(userStore, userApi)
 	email := gofakeit.Email()
 	createRequest := auth.CreateUserRequest{
 		FirstName: "Dan",
@@ -120,7 +106,7 @@ func TestPutUser_UpdatesRoles(t *testing.T) {
 		Org:       auth.BFLA,
 		Role:      auth.PeerNavigatorRole,
 	}
-	usr, err := createUser(ctx, t, userStore, createRequest)
+	usr, err := createUser(ctx, t, *userStore, createRequest)
 	if err != nil {
 		t.Fatalf("failed to create user: %v", err)
 	}

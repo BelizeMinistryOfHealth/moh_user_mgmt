@@ -297,24 +297,24 @@ func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
 }
 
 // UpdateUserRequest is the request body for updating a user.
-type UpdateUserRequest struct {
-	ID        string      `json:"id"`
-	FirstName string      `json:"firstName"`
-	LastName  string      `json:"lastName"`
-	Org       string      `json:"org"`
-	Role      string      `json:"role"`
-	Events    []UserEvent `json:"events"`
-	UpdatedBy string      `json:"updatedBy"`
-}
+//type UpdateUserRequest struct {
+//	ID        string      `json:"id"`
+//	FirstName string      `json:"firstName"`
+//	LastName  string      `json:"lastName"`
+//	Org       string      `json:"org"`
+//	Role      string      `json:"role"`
+//	Events    []UserEvent `json:"events"`
+//	UpdatedBy string      `json:"updatedBy"`
+//}
 
 // UpdateUser updates a user's permissions.
-func (s *UserStore) UpdateUser(ctx context.Context, user *User) error {
+func (s *UserStore) UpdateUser(ctx context.Context, user *User, email string) error {
 	persistedUser, err := s.GetUserByID(ctx, user.ID)
 	if err != nil {
 		return fmt.Errorf("UpdateUser: failed to get user by id: %w", err)
 	}
 	events := persistedUser.Events
-	events = append(events, UserEvent{Name: updateUserEvent, Date: time.Now(), User: "system"})
+	events = append(events, UserEvent{Name: updateUserEvent, Date: time.Now(), User: email})
 	if _, err := s.db.Client.Collection(s.collection).Doc(user.ID).Update(ctx, []firestore.Update{ //nolint:govet
 		{
 			Path:  "Events",

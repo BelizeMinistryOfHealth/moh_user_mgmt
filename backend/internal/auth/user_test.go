@@ -5,6 +5,7 @@ import (
 	"context"
 	firebase "firebase.google.com/go/v4"
 	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
 	"os"
 	"testing"
 )
@@ -113,7 +114,7 @@ func TestUserStore_UpdateUser(t *testing.T) {
 	for _, tt := range permissionsTcs {
 		t.Run(tt.name, func(t *testing.T) {
 			testUser.Role = tt.input
-			err := userStore.UpdateUser(ctx, testUser)
+			err := userStore.UpdateUser(ctx, testUser, gofakeit.Email())
 			if err != nil {
 				t.Errorf("unexpected error updating user: %v", err)
 			}

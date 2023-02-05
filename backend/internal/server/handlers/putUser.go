@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
@@ -73,7 +74,10 @@ func (s *UserCrudService) PutUser(w http.ResponseWriter, r *http.Request) {
 		Org:       org,
 		Role:      role,
 	}
-	if err := s.UserStore.UpdateUser(r.Context(), &user); err != nil {
+	if err := s.UserApi.UpdateUser(r.Context(), api.UpdateUserRequest{
+		User:      &user,
+		UpdatedBy: token.Email,
+	}); err != nil {
 		log.WithFields(log.Fields{
 			"body": r.Body,
 			"user": user,

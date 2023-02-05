@@ -472,3 +472,23 @@ func createNonAdminUser(t *testing.T, ctx context.Context, userStore auth.UserSt
 	})
 	return u
 }
+
+func createTestUser(t *testing.T, ctx context.Context, userStore auth.UserStore, org auth.Org, role auth.UserRole) *auth.User {
+	user := auth.CreateUserRequest{
+		FirstName: gofakeit.FirstName(),
+		LastName:  gofakeit.LastName(),
+		Email:     gofakeit.Email(),
+		Org:       org,
+		Role:      role,
+		CreatedBy: gofakeit.Email(),
+	}
+	u, err := userStore.CreateUser(ctx, user)
+	if err != nil {
+		t.Fatalf("error creating user: %v", err)
+	}
+
+	t.Cleanup(func() {
+		userStore.DeleteUserByID(ctx, u.ID) //nolint:errcheck,gosec
+	})
+	return u
+}
