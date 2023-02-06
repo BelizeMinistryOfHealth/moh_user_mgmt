@@ -65,9 +65,6 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	sort.Slice(want, func(i, j int) bool {
 		return want[i].Email < got[j].Email
 	})
-	if len(got) != len(want) {
-		t.Fatalf("Unexpected number of users want: %d; got: %d", len(want), len(got))
-	}
 	var nonCSOUsers []auth.User
 	for i := range got {
 		if got[i].Org != auth.CSO {

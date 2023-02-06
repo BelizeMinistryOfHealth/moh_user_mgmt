@@ -3,10 +3,8 @@ package handlers
 import (
 	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
-	"bz.moh.epi/users/internal/db"
 	"context"
 	"encoding/json"
-	firebase "firebase.google.com/go/v4"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
 	"net/http"
@@ -34,13 +32,9 @@ func createUser(ctx context.Context, t *testing.T, userStore auth.UserStore, use
 }
 func TestGetUser(t *testing.T) {
 	ctx := context.Background()
-	firebaseConfig := &firebase.Config{ProjectID: projectID}
-	firestoreClient, err := db.NewFirestoreClient(ctx, firebaseConfig)
-	if err != nil {
-		t.Fatalf("failed to create firestore client: %v", err)
-	}
-	userStore, _ := auth.NewStore(firestoreClient, apiKey)
-	userApi := api.CreateUserApi(userStore)
+	userStore := createUserStore(t, ctx)
+	userApi := api.CreateUserApi(*userStore)
+	adminUser := createTestUser(t, *userStore, auth.MOHW, auth.AdminRole)
 	userRequest := auth.CreateUserRequest{
 		FirstName: "Roberto",
 		LastName:  "Guerra",
@@ -49,12 +43,12 @@ func TestGetUser(t *testing.T) {
 		Role:      auth.PeerNavigatorRole,
 		CreatedBy: "some@mail.com",
 	}
-	wantUser, err := createUser(ctx, t, userStore, userRequest)
+	wantUser, err := createUser(ctx, t, *userStore, userRequest)
 	if err != nil {
 		t.Errorf("error creating user: %v", err)
 	}
-	mids := NewChain(verifyTokenAdmin())
-	userCrudService := NewUserCrudService(&userStore, userApi)
+	mids := NewChain(verifyUserToken(*adminUser))
+	userCrudService := NewUserCrudService(userStore, userApi)
 	res := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users/%s", wantUser.ID), nil)
 	mids.Then(userCrudService.GetUserByID)(res, req)

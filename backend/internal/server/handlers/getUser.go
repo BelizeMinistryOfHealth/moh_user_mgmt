@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
@@ -24,7 +25,10 @@ func (s *UserCrudService) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	paths := strings.Split(path, "/")
 	id := paths[len(paths)-1]
 
-	user, err := s.UserStore.GetUserByID(r.Context(), id)
+	user, err := s.UserApi.GetUser(r.Context(), api.GetUserRequest{
+		ID:          id,
+		RequestedBy: token.Email,
+	})
 	if err != nil {
 		log.WithError(err).Error("error retrieving user by ID")
 		http.Error(w, "error retrieving user from the database", http.StatusInternalServerError)

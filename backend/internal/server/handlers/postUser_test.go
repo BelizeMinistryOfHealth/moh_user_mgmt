@@ -118,17 +118,3 @@ func userToJSON(u PostUserRequest) io.Reader {
 	r, _ := json.Marshal(u)
 	return bytes.NewReader(r)
 }
-func verifyTokenAdmin() Middleware {
-	return func(f http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			t := auth.JwtToken{
-				Email: "me@mail.com",
-				Admin: true,
-				Org:   auth.BFLA,
-				Role:  auth.SrRole,
-			}
-			ctx := context.WithValue(r.Context(), "authToken", t) //nolint: staticcheck
-			f(w, r.WithContext(ctx))
-		}
-	}
-}

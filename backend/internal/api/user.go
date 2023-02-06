@@ -101,6 +101,45 @@ func (a *UserApi) ListUsers(ctx context.Context, email string) ([]auth.User, err
 	return users, nil
 }
 
+// GetUserRequest is the request to get a user.
+type GetUserRequest struct {
+	// ID is the ID of the user to get.
+	ID string
+	// RequestedBy is the email of the account making this request.
+	RequestedBy string
+}
+
+// GetUser gets a user. Only admins are allowed to get users. Only admins can get users for their
+// respective organizations. Admin users for NAC and MOHW can get users for any organization.
+// NAC users can not get MOHW users.
+func (a *UserApi) GetUser(ctx context.Context, request GetUserRequest) (*auth.User, error) {
+	requestedBy, err := a.UserStore.GetUserByEmail(ctx, request.RequestedBy)
+	if err != nil {
+		return nil, fmt.Errorf("error verifying person getting user: %w", err)
+	}
+	if requestedBy.ID == request.ID {
+		user, err := a.UserStore.GetUserByID(ctx, request.ID) //nolint:govet
+		if err != nil {
+			return nil, fmt.Errorf("error getting user by ID: %w", err)
+		}
+		return user, nil
+	}
+	if requestedBy.Role != auth.AdminRole {
+		return nil, fmt.Errorf("only admins can retrieve other users") //nolint: goerr113
+	}
+	user, err := a.UserStore.GetUserByID(ctx, request.ID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting user by ID: %w", err)
+	}
+	if user.Org != requestedBy.Org && (requestedBy.Org != auth.MOHW && requestedBy.Org != auth.NAC) {
+		return nil, fmt.Errorf("only MOHW and NAC admins can retrieve users for other organizations") //nolint: goerr113
+	}
+	if user.Org == auth.MOHW && requestedBy.Org == auth.NAC {
+		return nil, fmt.Errorf("NAC users cannot retrieve MOHW users") //nolint: goerr113
+	}
+	return user, nil
+}
+
 type permissionRequest struct {
 	Org         auth.Org
 	RequestedBy string
