@@ -43,17 +43,16 @@ const UserEditForm = withLoader((_, queries) => {
     initialValues: {
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email,
     },
     validate: {
-      email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
+      firstName: (value) => (value.length < 2 ? 'First Name must have at least 2 characters' : null),
+      lastName: (value) => (value.length < 2 ? 'Last Name must have at least 2 characters' : null),
     },
   });
 
-  const handleSubmit = async (input: Omit<User, 'id' | 'org' | 'role' | 'enabled'>) => {
+  const handleSubmit = async (input: Omit<User, 'id' | 'org' | 'role' | 'enabled' | 'email'>) => {
     form.validate();
-    const body: User = { ...input, id: user.id, org: organization, role: role, enabled };
-    console.log({ body });
+    const body: User = { ...input, id: user.id, org: organization, role: role, enabled, email: user.email };
     if (form.isValid()) {
       await putUser(body);
     }
@@ -76,7 +75,7 @@ const UserEditForm = withLoader((_, queries) => {
         <div className={classes.userForm}>
           <TextInput required withAsterisk label={'First Name'} {...form.getInputProps('firstName')} />
           <TextInput required withAsterisk label={'Last Name'} {...form.getInputProps('lastName')} />
-          <TextInput required withAsterisk label={'Email'} {...form.getInputProps('email')} />
+          <TextInput label={'Email'} value={user.email} disabled />
           <Checkbox.Group
             orientation={'vertical'}
             defaultValue={[`${user.enabled}`]}
@@ -96,7 +95,6 @@ const UserEditForm = withLoader((_, queries) => {
             orientation={'vertical'}
             value={organization}
             onChange={(v: Org) => {
-              console.log({ org: v });
               setOrganization(v);
             }}
             withAsterisk
