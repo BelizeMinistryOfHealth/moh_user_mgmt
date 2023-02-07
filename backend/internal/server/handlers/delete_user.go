@@ -40,5 +40,5 @@ func (s *UserCrudService) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("User deleted successfully")) //nolint:errcheck,gosec
+	w.Write([]byte("{\"message\": \"User deleted successfully\"}")) //nolint:errcheck,gosec
 }
