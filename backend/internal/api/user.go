@@ -140,6 +140,53 @@ func (a *UserApi) GetUser(ctx context.Context, request GetUserRequest) (*auth.Us
 	return user, nil
 }
 
+// DeleteUserRequest is the request to delete a user.
+type DeleteUserRequest struct {
+	// ID is the user's ID to delete.
+	ID string
+	// DeletedBy is the email of the account making this delete.
+	DeletedBy string
+}
+
+// DeleteUser deletes a user. Only admins are allowed to delete users. Only admins can delete users for their
+// respective organizations. Admin users for NAC and MOHW can delete users for any organization.
+// NAC users can not delete MOHW users.
+func (a *UserApi) DeleteUser(ctx context.Context, request DeleteUserRequest) error {
+	userToDelete, err := a.UserStore.GetUserByID(ctx, request.ID)
+	if err != nil {
+		return fmt.Errorf("error getting user to delete: %w", err)
+	}
+	if userToDelete == nil {
+		return nil
+	}
+
+	requestedBy, err := a.UserStore.GetUserByEmail(ctx, request.DeletedBy)
+	if err != nil {
+		return fmt.Errorf("error verifying person deleting user: %w", err)
+	}
+	if userToDelete.Org == auth.MOHW && requestedBy.Org != auth.MOHW {
+		return fmt.Errorf("only MOHW users can delete MOHW users") //nolint: goerr113
+	}
+
+	if (userToDelete.Org == auth.MOHW || userToDelete.Org == auth.NAC) && (requestedBy.Org != auth.MOHW && requestedBy.Org != auth.NAC) {
+		return fmt.Errorf("only MOHW and NAC users can delete MOHW and NAC users") //nolint: goerr113
+	}
+
+	if requestedBy.Org != userToDelete.Org && (requestedBy.Org != auth.MOHW && requestedBy.Org != auth.NAC) {
+		return fmt.Errorf("only users from the same organization can delete users from that organization") //nolint: goerr113
+	}
+
+	if requestedBy.Role != auth.AdminRole {
+		return fmt.Errorf("only admins can delete users") //nolint: goerr113
+	}
+
+	err = a.UserStore.DeleteUser(ctx, *userToDelete)
+	if err != nil {
+		return fmt.Errorf("error deleting user: %w", err)
+	}
+	return nil
+}
+
 type permissionRequest struct {
 	Org         auth.Org
 	RequestedBy string

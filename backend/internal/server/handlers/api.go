@@ -27,6 +27,9 @@ func API(ctx context.Context, app *internal.App) (*mux.Router, error) {
 	r.HandleFunc("/users/{id}", mids.
 		Then(userCrudService.PutUser)).
 		Methods(http.MethodOptions, http.MethodPut)
+	r.HandleFunc("/users/{id}", mids.
+		Then(userCrudService.DeleteUser)).
+		Methods(http.MethodOptions, http.MethodDelete)
 	return r, nil
 }
 

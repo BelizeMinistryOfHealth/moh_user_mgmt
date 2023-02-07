@@ -266,6 +266,9 @@ func (s *UserStore) GetUserByID(ctx context.Context, ID string) (*User, error) {
 			}
 		}
 	}
+	if user.ID == "" {
+		return nil, fmt.Errorf("user not found with id %s", ID) //nolint:goerr113
+	}
 	return user.ToUser()
 }
 
