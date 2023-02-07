@@ -1,7 +1,7 @@
 import React from 'react';
 import LoginRoute from './LoginRoute';
 import { importFromLocalStorage } from '../localStorage';
-import { createUser, logout } from '../features/auth/authSlice';
+import { logout } from '../features/auth/authSlice';
 import { STORAGE_KEYS } from '../appConstants';
 import Home from './Home';
 import UsersRoute from './UsersRoute';
@@ -23,12 +23,11 @@ export const router = createBrowserRouter([
         return { user: null };
       }
       if (localState && localState.user?.expires && localState.user.expires > new Date().getTime()) {
-        store.dispatch(createUser({ user: localState.user }));
-        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        store.dispatch(logout);
         return { user: null };
       }
-      if (localState && localState.user) {
-        store.dispatch(createUser({ user: localState.user }));
+      if (localState && !localState.user) {
+        store.dispatch(logout);
         localStorage.removeItem(STORAGE_KEYS.USER_DATA);
         return { user: null };
       }

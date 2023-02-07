@@ -1,5 +1,3 @@
-import { UserApplication } from './userApplications';
-
 export type AuthUser = {
   uid: string;
   email: string;
@@ -8,13 +6,18 @@ export type AuthUser = {
   expires?: number;
 };
 
-export type RawUser = {
+export const RoleValues = ['AdminRole', 'SrRole', 'PeerNavigatorRole', 'AdherenceCounselorRole'] as const;
+export type Role = typeof RoleValues[number];
+
+export const OrgValues = ['NAC', 'MOHW', 'BFLA', 'GoJoven'] as const;
+export type Org = typeof OrgValues[number];
+
+export type User = {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  userApplications: UserApplication[] | null | undefined;
-};
-export type User = Omit<RawUser, 'userApplications'> & {
-  userApplications: UserApplication | null;
+  role: Role;
+  org: Org;
+  enabled: boolean;
 };

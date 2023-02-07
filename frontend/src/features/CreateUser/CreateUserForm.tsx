@@ -1,13 +1,11 @@
 import React from 'react';
-import { Button, Checkbox, Group, TextInput, Title } from '@mantine/core';
-import { useGetApplicationsQuery, usePostUserMutation } from '../../api/usersApi';
+import { Button, Group, TextInput, Title } from '@mantine/core';
+import { usePostUserMutation } from '../../api/usersApi';
 import { useForm } from '@mantine/form';
 import { Navigate, useNavigate } from 'react-router-dom';
 
 const CreateUserForm = () => {
   const navigate = useNavigate();
-  const [permissions, setPermissions] = React.useState<string[]>([]);
-  const { data: applications, isLoading, isFetching, isError } = useGetApplicationsQuery();
   const [postUser, { isSuccess: saved, isLoading: isSaving }] = usePostUserMutation();
   const form = useForm({
     initialValues: {
@@ -26,24 +24,12 @@ const CreateUserForm = () => {
     form.validate();
     console.log({ input });
     if (form.isValid()) {
-      console.log({ ...input, applications: { ...applications, permissions } });
-      const userApplications = applications ? [{ ...applications, permissions }] : [];
-      await postUser({ ...input, userApplications }).unwrap();
+      // await postUser({ ...input, userApplications }).unwrap();
     }
   };
   if (isSaving) return <>Saving...</>;
   if (saved) {
     return <Navigate to={'/users'} />;
-  }
-  if (isLoading || isFetching) return <>Loading...</>;
-  if (isError || !applications) {
-    return (
-      <div>
-        <Title color={'white'} size={'h2'}>
-          Ooops, this is embarrassing! An error occurred. Please try again later!
-        </Title>
-      </div>
-    );
   }
 
   return (
@@ -59,12 +45,12 @@ const CreateUserForm = () => {
           <Title color={'white'} size={'h3'}>
             Applications
           </Title>
-          <Checkbox.Group label={'Permissions'} orientation={'vertical'} onChange={setPermissions}>
-            {applications &&
-              applications.permissions.map((permission) => (
-                <Checkbox key={permission} label={permission} value={permission} />
-              ))}
-          </Checkbox.Group>
+          {/*<Checkbox.Group label={'Permissions'} orientation={'vertical'} onChange={setPermissions}>*/}
+          {/*  {applications &&*/}
+          {/*    applications.permissions.map((permission) => (*/}
+          {/*      <Checkbox key={permission} label={permission} value={permission} />*/}
+          {/*    ))}*/}
+          {/*</Checkbox.Group>*/}
         </div>
         <Group mt={'sm'}>
           <Button type={'submit'}>Save</Button>

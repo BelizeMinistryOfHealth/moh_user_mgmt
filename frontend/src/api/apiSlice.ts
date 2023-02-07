@@ -1,5 +1,7 @@
 import { BaseQueryFn, createApi, FetchArgs, fetchBaseQuery, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { STORAGE_KEYS } from '../appConstants';
+import { store } from '../store';
+import { logout } from '../features/auth/authSlice';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: 'https://users-mgmt-e46d3zpgka-ue.a.run.app',
@@ -21,7 +23,8 @@ const baseQueryWithAuthCheck: BaseQueryFn<string | FetchArgs, unknown, FetchBase
   const result = await baseQuery(args, api, extraOptions);
   const status = result?.meta?.response?.status;
   if (status == 401) {
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    store.dispatch(logout);
+    // localStorage.removeItem(STORAGE_KEYS.USER_DATA);
   }
   return result;
 };

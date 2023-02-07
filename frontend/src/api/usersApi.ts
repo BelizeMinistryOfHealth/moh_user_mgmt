@@ -1,6 +1,5 @@
 import { apiSlice } from './apiSlice';
-import { RawUser, User } from '../models/authUser';
-import { UserApplication } from '../models/userApplications';
+import { User } from '../models/authUser';
 
 const usersApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
@@ -20,12 +19,6 @@ const usersApi = apiSlice.injectEndpoints({
       providesTags: ['User'],
     }),
     getUser: build.query<User, string>({
-      transformResponse(response: RawUser) {
-        return {
-          ...response,
-          userApplications: response.userApplications?.find((app) => app.name === 'hiv_surveys') ?? null,
-        };
-      },
       query(id: string) {
         return {
           url: `/users/${id}`,
@@ -34,24 +27,7 @@ const usersApi = apiSlice.injectEndpoints({
       },
       providesTags: ['User'],
     }),
-    getApplications: build.query<UserApplication | null | undefined, void>({
-      transformResponse: (response: UserApplication[]) => {
-        return response.find((app) => app.name === 'hiv_surveys');
-      },
-      query() {
-        return {
-          url: '/applications',
-          method: 'GET',
-        };
-      },
-    }),
-    postUser: build.mutation<User, Omit<RawUser, 'id'>>({
-      transformResponse(response: RawUser) {
-        return {
-          ...response,
-          userApplications: response.userApplications?.find((app) => app.name === 'hiv_surveys') ?? null,
-        };
-      },
+    postUser: build.mutation<User, Omit<User, 'id'>>({
       query: (user) => {
         return {
           url: '/user',
@@ -61,8 +37,18 @@ const usersApi = apiSlice.injectEndpoints({
       },
       invalidatesTags: ['User'],
     }),
+    putUser: build.mutation<User, User>({
+      query: (user) => {
+        return {
+          url: `/users/${user.id}`,
+          method: 'PUT',
+          body: user,
+        };
+      },
+      invalidatesTags: ['User'],
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useGetUsersQuery, useGetApplicationsQuery, useGetUserQuery, usePostUserMutation } = usersApi;
+export const { useGetUsersQuery, useGetUserQuery, usePostUserMutation, usePutUserMutation } = usersApi;

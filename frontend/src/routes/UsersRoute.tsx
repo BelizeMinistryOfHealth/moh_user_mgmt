@@ -17,7 +17,6 @@ const UsersRoute = () => {
   }
 
   if (isError) {
-    console.log({ data, isError, user });
     return <>Error</>;
   }
 
