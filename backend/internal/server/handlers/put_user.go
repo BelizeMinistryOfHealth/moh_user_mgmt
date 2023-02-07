@@ -1,46 +1,51 @@
 package handlers
 
 import (
+	"bz.moh.epi/users/internal/api"
 	"bz.moh.epi/users/internal/auth"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"strings"
 )
 
-// PostUserRequest is the payload that is expected by the handler that creates a new user
-type PostUserRequest struct {
+type PutUserRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
-	Role      string `json:"role"`
 	Org       string `json:"org"`
+	Role      string `json:"role"`
 }
 
-// PostUser is the handler for creating a new user
-func (s *UserCrudService) PostUser(w http.ResponseWriter, r *http.Request) {
+func (s *UserCrudService) PutUser(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close() //nolint:errcheck
 	if r.Method == http.MethodOptions {
 		return
 	}
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPut {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-	// Verify that user is admin
+
+	// Verify that the user is admin
 	token := r.Context().Value("authToken").(auth.JwtToken)
 	if !token.Admin {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	// Get the body
-	var requestPayload PostUserRequest
+	// Get Body
+	var requestPayload PutUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestPayload); err != nil {
 		log.WithFields(log.Fields{
 			"body": r.Body,
-		}).WithError(err).Error("Error decoding request when creating a new user")
+		}).WithError(err).Error("Error decoding request when updating a user")
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+	// Get the ID param
+	path := r.RequestURI
+	paths := strings.Split(path, "/")
+	id := paths[len(paths)-1]
 
 	role, err := auth.ToUserRole(requestPayload.Role)
 	if err != nil {
@@ -61,33 +66,44 @@ func (s *UserCrudService) PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createRequest := auth.CreateUserRequest{
+	var user = auth.User{
+		ID:        id,
 		FirstName: requestPayload.FirstName,
 		LastName:  requestPayload.LastName,
 		Email:     requestPayload.Email,
 		Org:       org,
 		Role:      role,
-		CreatedBy: token.Email,
 	}
-
-	user, err := s.UserApi.CreateUser(r.Context(), createRequest)
-
-	//user, err := s.UserStore.CreateUser(r.Context(), createRequest)
-	if err != nil {
+	if err := s.UserApi.UpdateUser(r.Context(), api.UpdateUserRequest{
+		User:      &user,
+		UpdatedBy: token.Email,
+	}); err != nil {
 		log.WithFields(log.Fields{
 			"body": r.Body,
-		}).WithError(err).Error("Error creating a new user")
+			"user": user,
+		}).WithError(err).Error("Error updating user")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	// Return user as json
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	response := UserResponse{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Org:       user.Org.String(),
+		Role:      user.Role.String(),
+		Enabled:   user.Enabled,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.WithFields(log.Fields{
-			"user":    user,
-			"request": r.Body,
+			"user":     user,
+			"response": response,
+			"request":  r.Body,
 		}).WithError(err).Error("Error encoding user as json")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 }
