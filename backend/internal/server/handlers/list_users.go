@@ -30,9 +30,22 @@ func (s *UserCrudService) ListUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if err = json.NewEncoder(w).Encode(users); err != nil {
+	var response []UserResponse
+	for i := range users {
+		response = append(response, UserResponse{
+			ID:        users[i].ID,
+			FirstName: users[i].FirstName,
+			LastName:  users[i].LastName,
+			Email:     users[i].Email,
+			Org:       users[i].Org.String(),
+			Role:      users[i].Role.String(),
+			Enabled:   users[i].Enabled,
+		})
+	}
+	if err = json.NewEncoder(w).Encode(response); err != nil {
 		log.WithFields(log.Fields{
-			"users": users,
+			"users":    users,
+			"response": response,
 		}).WithError(err).Error("error encoding users")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

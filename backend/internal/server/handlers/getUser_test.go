@@ -56,7 +56,7 @@ func TestGetUser(t *testing.T) {
 		t.Errorf("GET users/:id want: 200; got: %d", res.Code)
 	}
 
-	var got auth.User
+	var got UserResponse
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Errorf("could not decode user: %v", err)
 	}

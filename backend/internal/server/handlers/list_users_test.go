@@ -53,7 +53,7 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	if res.Code != 200 {
 		t.Errorf("Status Code | want: %d; got: %d", 200, res.Code)
 	}
-	var got []auth.User
+	var got []UserResponse
 	if err := json.Unmarshal(res.Body.Bytes(), &got); err != nil {
 		t.Fatalf("failed to unarmshal users (%v): %v", res.Body, err)
 	}
@@ -65,9 +65,9 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	sort.Slice(want, func(i, j int) bool {
 		return want[i].Email < got[j].Email
 	})
-	var nonCSOUsers []auth.User
+	var nonCSOUsers []UserResponse
 	for i := range got {
-		if got[i].Org != auth.CSO {
+		if got[i].Org != "CSO" {
 			nonCSOUsers = append(nonCSOUsers, got[i])
 		}
 	}

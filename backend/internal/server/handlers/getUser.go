@@ -39,9 +39,19 @@ func (s *UserCrudService) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		"user":    user,
 		"request": r.RequestURI,
 	}).Info("Retrieved user")
-	if err = json.NewEncoder(w).Encode(user); err != nil {
+	response := UserResponse{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Org:       user.Org.String(),
+		Role:      user.Role.String(),
+		Enabled:   user.Enabled,
+	}
+	if err = json.NewEncoder(w).Encode(response); err != nil {
 		log.WithFields(log.Fields{
-			"user": user,
+			"user":     user,
+			"response": response,
 		}).WithError(err).Error("error encoding user")
 		http.Error(w, "error encoding user", http.StatusInternalServerError)
 		return
