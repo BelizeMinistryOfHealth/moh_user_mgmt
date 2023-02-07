@@ -57,7 +57,7 @@ func TestUserApi_BFLAAdminUser_CanNotRetrieveUsersFromOtherOrgs(t *testing.T) {
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
 	adminUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
-	csoUser := createTestUser(t, ctx, userStore, auth.CSO, auth.PeerNavigatorRole)
+	csoUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.PeerNavigatorRole)
 	nacUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdminRole)
 	mohwUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 
@@ -66,7 +66,7 @@ func TestUserApi_BFLAAdminUser_CanNotRetrieveUsersFromOtherOrgs(t *testing.T) {
 		user *auth.User
 	}{
 		{
-			name: "Can Not Retrieve CSO User",
+			name: "Can Not Retrieve GOJOVEN User",
 			user: csoUser,
 		},
 		{
@@ -91,11 +91,11 @@ func TestUserApi_BFLAAdminUser_CanNotRetrieveUsersFromOtherOrgs(t *testing.T) {
 		})
 	}
 }
-func TestUserApi_CSOAdminUser_CanNotRetrieveUsersFromOtherOrgs(t *testing.T) {
+func TestUserApi_GOJOVENAdminUser_CanNotRetrieveUsersFromOtherOrgs(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	adminUser := createTestUser(t, ctx, userStore, auth.CSO, auth.AdminRole)
+	adminUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.AdminRole)
 	bflaUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.PeerNavigatorRole)
 	nacUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdminRole)
 	mohwUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
@@ -130,12 +130,12 @@ func TestUserApi_CSOAdminUser_CanNotRetrieveUsersFromOtherOrgs(t *testing.T) {
 		})
 	}
 }
-func TestUserApi_CSOAdminUser_CanRetrieveCSOUser(t *testing.T) {
+func TestUserApi_GOJOVENAdminUser_CanRetrieveGOJOVENUser(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	user := createTestUser(t, ctx, userStore, auth.CSO, auth.AdminRole)
-	otherUser := createTestUser(t, ctx, userStore, auth.CSO, auth.PeerNavigatorRole)
+	user := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.AdminRole)
+	otherUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.PeerNavigatorRole)
 	_, err := userApi.GetUser(ctx, GetUserRequest{
 		ID:          otherUser.ID,
 		RequestedBy: user.Email,
@@ -149,7 +149,7 @@ func TestUserApi_MOHWdminUser_CanRetrieveUsersFromAllOrgs(t *testing.T) {
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
 	adminUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
-	csoUser := createTestUser(t, ctx, userStore, auth.CSO, auth.PeerNavigatorRole)
+	csoUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.PeerNavigatorRole)
 	nacUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdminRole)
 	mohwUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 	bflaUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
@@ -159,7 +159,7 @@ func TestUserApi_MOHWdminUser_CanRetrieveUsersFromAllOrgs(t *testing.T) {
 		user *auth.User
 	}{
 		{
-			name: "Can Retrieve CSO User",
+			name: "Can Retrieve GOJOVEN User",
 			user: csoUser,
 		},
 		{
@@ -193,7 +193,7 @@ func TestUserApi_NACAdminUser_CanRetrieveUsersFromAllOrgs(t *testing.T) {
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
 	adminUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdminRole)
-	csoUser := createTestUser(t, ctx, userStore, auth.CSO, auth.PeerNavigatorRole)
+	csoUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.PeerNavigatorRole)
 	nacUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdminRole)
 	bflaUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
 
@@ -202,7 +202,7 @@ func TestUserApi_NACAdminUser_CanRetrieveUsersFromAllOrgs(t *testing.T) {
 		user *auth.User
 	}{
 		{
-			name: "Can Retrieve CSO User",
+			name: "Can Retrieve GOJOVEN User",
 			user: csoUser,
 		},
 		{

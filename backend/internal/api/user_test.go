@@ -265,12 +265,12 @@ func TestCreateUserApi_BFLA_CanNotCreateMOHWAndNACUsers(t *testing.T) {
 			},
 		},
 		{
-			"BFLA Admins can not create CSO Admins",
+			"BFLA Admins can not create GOJOVEN Admins",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       auth.CSO,
+				Org:       auth.GOJOVEN,
 				Role:      auth.AdminRole,
 				CreatedBy: bflaUser.Email,
 			},
@@ -296,18 +296,18 @@ func TestCreateUserApi_BFLA_CanNotCreateMOHWAndNACUsers(t *testing.T) {
 		})
 	}
 }
-func TestCreateUserApi_CSO_CanNotCreateMOHWAndNACUsers(t *testing.T) {
+func TestCreateUserApi_GOJOVEN_CanNotCreateMOHWAndNACUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	csoUser := createAdminUser(t, ctx, userStore, auth.CSO)
+	csoUser := createAdminUser(t, ctx, userStore, auth.GOJOVEN)
 	var testCases = []struct {
 		name  string
 		input auth.CreateUserRequest
 	}{
 
 		{
-			"CSO Admins can not create MOHW Admins",
+			"GOJOVEN Admins can not create MOHW Admins",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
@@ -318,7 +318,7 @@ func TestCreateUserApi_CSO_CanNotCreateMOHWAndNACUsers(t *testing.T) {
 			},
 		},
 		{
-			"CSO Admins can not create BFLA Admins",
+			"GOJOVEN Admins can not create BFLA Admins",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
@@ -329,7 +329,7 @@ func TestCreateUserApi_CSO_CanNotCreateMOHWAndNACUsers(t *testing.T) {
 			},
 		},
 		{
-			"CSO Admins can not create NAC Admins",
+			"GOJOVEN Admins can not create NAC Admins",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
@@ -349,44 +349,44 @@ func TestCreateUserApi_CSO_CanNotCreateMOHWAndNACUsers(t *testing.T) {
 		})
 	}
 }
-func TestCreateUserApi_CSO_AdminsCanCreateUsers(t *testing.T) {
+func TestCreateUserApi_GOJOVEN_AdminsCanCreateUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	csoUser := createAdminUser(t, ctx, userStore, auth.CSO)
+	csoUser := createAdminUser(t, ctx, userStore, auth.GOJOVEN)
 
 	var testCases = []struct {
 		name  string
 		input auth.CreateUserRequest
 	}{
-		{"CSO Admins can create Peer Navigators at CSO",
+		{"GOJOVEN Admins can create Peer Navigators at GOJOVEN",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       auth.CSO,
+				Org:       auth.GOJOVEN,
 				Role:      auth.PeerNavigatorRole,
 				CreatedBy: csoUser.Email,
 			},
 		},
 		{
-			"CSO Admins can create Adherence Counselors at CSO",
+			"GOJOVEN Admins can create Adherence Counselors at GOJOVEN",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       auth.CSO,
+				Org:       auth.GOJOVEN,
 				Role:      auth.AdherenceCounselorRole,
 				CreatedBy: csoUser.Email,
 			},
 		},
 		{
-			"CSO Admins can create SRs at CSO",
+			"GOJOVEN Admins can create SRs at GOJOVEN",
 			auth.CreateUserRequest{
 				FirstName: gofakeit.FirstName(),
 				LastName:  gofakeit.LastName(),
 				Email:     gofakeit.Email(),
-				Org:       auth.CSO,
+				Org:       auth.GOJOVEN,
 				Role:      auth.SrRole,
 				CreatedBy: csoUser.Email,
 			},

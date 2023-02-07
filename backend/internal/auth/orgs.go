@@ -8,17 +8,17 @@ const (
 	MOHW Org = iota
 	NAC
 	BFLA
-	CSO
+	GOJOVEN
 )
 
 const (
 	FirstOrg = MOHW
-	LastOrg  = CSO
+	LastOrg  = GOJOVEN
 )
 
 // String converts an Org to a string.
 func (o Org) String() string {
-	return [...]string{"MOHW", "NAC", "BFLA", "CSO"}[o]
+	return [...]string{"MOHW", "NAC", "BFLA", "GoJoven"}[o]
 }
 
 // ToOrg converts a string to an Org.
@@ -31,8 +31,8 @@ func ToOrg(s string) (Org, error) {
 		return NAC, nil
 	case "BFLA":
 		return BFLA, nil
-	case "CSO":
-		return CSO, nil
+	case "GoJoven":
+		return GOJOVEN, nil
 	default:
 		return -1, fmt.Errorf("invalid org: %s", s) //nolint: goerr113
 	}

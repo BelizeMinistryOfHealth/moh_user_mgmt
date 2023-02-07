@@ -18,7 +18,7 @@ func TestUserApi_MOHW_AdminsCanListAllUsers(t *testing.T) {
 	mohwTestUser2 := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 	bflaTestUser1 := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
 	bflaTestUser2 := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
-	csoTestUser1 := createTestUser(t, ctx, userStore, auth.CSO, auth.SrRole)
+	csoTestUser1 := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.SrRole)
 
 	returnedUsers, err := userApi.ListUsers(ctx, mohwAdminUser.Email)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestUserApi_NAC_AdminsCanListAllUsersExceptMOHW(t *testing.T) {
 	_ = createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 	bflaTestUser1 := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
 	bflaTestUser2 := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
-	csoTestUser1 := createTestUser(t, ctx, userStore, auth.CSO, auth.SrRole)
+	csoTestUser1 := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.SrRole)
 
 	returnedUsers, err := userApi.ListUsers(ctx, nacAdminUser.Email)
 	if err != nil {
@@ -102,7 +102,7 @@ func TestUserApi_BFLA_AdminsCanOnlyListBFLAUsers(t *testing.T) {
 	_ = createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 	bflaTestUser1 := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
 	bflaTestUser2 := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
-	_ = createTestUser(t, ctx, userStore, auth.CSO, auth.SrRole)
+	_ = createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.SrRole)
 
 	returnedUsers, err := userApi.ListUsers(ctx, bflaAdminUser.Email)
 	if err != nil {
@@ -129,18 +129,18 @@ func TestUserApi_BFLA_AdminsCanOnlyListBFLAUsers(t *testing.T) {
 		t.Errorf("Number of users | want: %d; got: %d", len(expectedUsers), len(returnedUsers))
 	}
 }
-func TestUserApi_CSO_AdminsCanOnlyListCSOUsers(t *testing.T) {
+func TestUserApi_GOJOVEN_AdminsCanOnlyListGOJOVENUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	csoAdminUser := createAdminUser(t, ctx, userStore, auth.CSO)
+	csoAdminUser := createAdminUser(t, ctx, userStore, auth.GOJOVEN)
 	_ = createTestUser(t, ctx, userStore, auth.NAC, auth.AdherenceCounselorRole)
 	_ = createTestUser(t, ctx, userStore, auth.NAC, auth.AdminRole)
 	_ = createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 	_ = createTestUser(t, ctx, userStore, auth.MOHW, auth.AdminRole)
 	_ = createTestUser(t, ctx, userStore, auth.BFLA, auth.AdminRole)
 	_ = createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
-	csoTestUser := createTestUser(t, ctx, userStore, auth.CSO, auth.SrRole)
+	csoTestUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.SrRole)
 
 	returnedUsers, err := userApi.ListUsers(ctx, csoAdminUser.Email)
 	if err != nil {

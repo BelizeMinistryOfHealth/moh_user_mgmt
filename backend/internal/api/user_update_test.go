@@ -13,7 +13,7 @@ func TestUserApi_NAC_AdminsCanUpdateUsers(t *testing.T) {
 	nacAdminUser := createAdminUser(t, ctx, userStore, auth.NAC)
 	nacTestUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdherenceCounselorRole)
 	bflaTestUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
-	csoTestUser := createTestUser(t, ctx, userStore, auth.CSO, auth.AdherenceCounselorRole)
+	csoTestUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.AdherenceCounselorRole)
 
 	var testCases = []struct {
 		name  string
@@ -48,7 +48,7 @@ func TestUserApi_NAC_AdminsCanUpdateUsers(t *testing.T) {
 			},
 		},
 		{
-			name: "NAC Admin can update users for CSO",
+			name: "NAC Admin can update users for GOJOVEN",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        csoTestUser.ID,
@@ -122,7 +122,7 @@ func TestUserApi_MOHW_CanUpdateAllUsers(t *testing.T) {
 	mohwAdminUser := createAdminUser(t, ctx, userStore, auth.MOHW)
 	nacTestUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdherenceCounselorRole)
 	bflaTestUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
-	csoTestUser := createTestUser(t, ctx, userStore, auth.CSO, auth.AdherenceCounselorRole)
+	csoTestUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.AdherenceCounselorRole)
 	mohwTestUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdherenceCounselorRole)
 
 	var testCases = []struct {
@@ -158,7 +158,7 @@ func TestUserApi_MOHW_CanUpdateAllUsers(t *testing.T) {
 			},
 		},
 		{
-			name: "MOHW Admin can update users for CSO",
+			name: "MOHW Admin can update users for GOJOVEN",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        csoTestUser.ID,
@@ -246,19 +246,19 @@ func TestUserApi_BFLA_AdminsCanUpdateBFLAUsers(t *testing.T) {
 	}
 }
 
-func TestUserApi_CSO_Admin_CanUpdateCSOUsers(t *testing.T) {
+func TestUserApi_GOJOVEN_Admin_CanUpdateGOJOVENUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	csoAdminUser := createAdminUser(t, ctx, userStore, auth.CSO)
-	csoTestUser := createTestUser(t, ctx, userStore, auth.CSO, auth.AdherenceCounselorRole)
+	csoAdminUser := createAdminUser(t, ctx, userStore, auth.GOJOVEN)
+	csoTestUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.AdherenceCounselorRole)
 
 	var testCases = []struct {
 		name  string
 		input UpdateUserRequest
 	}{
 		{
-			name: "CSO Admin can update users for CSO",
+			name: "GOJOVEN Admin can update users for GOJOVEN",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        csoTestUser.ID,
@@ -296,7 +296,7 @@ func TestUserApi_BFLA_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 	bflaAdminUser := createAdminUser(t, ctx, userStore, auth.BFLA)
 	mohwTestUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdherenceCounselorRole)
 	nacTestUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdherenceCounselorRole)
-	csoTestUser := createTestUser(t, ctx, userStore, auth.CSO, auth.AdherenceCounselorRole)
+	csoTestUser := createTestUser(t, ctx, userStore, auth.GOJOVEN, auth.AdherenceCounselorRole)
 
 	var testCases = []struct {
 		name  string
@@ -331,7 +331,7 @@ func TestUserApi_BFLA_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 			},
 		},
 		{
-			name: "BFLA Admin can not update users for CSO",
+			name: "BFLA Admin can not update users for GOJOVEN",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        csoTestUser.ID,
@@ -355,11 +355,11 @@ func TestUserApi_BFLA_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 	}
 }
 
-func TestUserApi_CSO_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
+func TestUserApi_GOJOVEN_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := CreateUserApi(userStore)
-	csoAdminUser := createAdminUser(t, ctx, userStore, auth.CSO)
+	csoAdminUser := createAdminUser(t, ctx, userStore, auth.GOJOVEN)
 	mohwTestUser := createTestUser(t, ctx, userStore, auth.MOHW, auth.AdherenceCounselorRole)
 	nacTestUser := createTestUser(t, ctx, userStore, auth.NAC, auth.AdherenceCounselorRole)
 	bflaTestUser := createTestUser(t, ctx, userStore, auth.BFLA, auth.AdherenceCounselorRole)
@@ -369,7 +369,7 @@ func TestUserApi_CSO_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 		input UpdateUserRequest
 	}{
 		{
-			name: "CSO Admin can not update users for MOHW",
+			name: "GOJOVEN Admin can not update users for MOHW",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        mohwTestUser.ID,
@@ -383,7 +383,7 @@ func TestUserApi_CSO_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 			},
 		},
 		{
-			name: "CSO Admin can not update users for NAC",
+			name: "GOJOVEN Admin can not update users for NAC",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        nacTestUser.ID,
@@ -397,7 +397,7 @@ func TestUserApi_CSO_AdminsCanNotUpdateUsersInOtherOrgs(t *testing.T) {
 			},
 		},
 		{
-			name: "CSO Admin can not update users for BFLA",
+			name: "GOJOVEN Admin can not update users for BFLA",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        bflaTestUser.ID,
@@ -428,7 +428,7 @@ func TestUserApi_AdminUsersCanNotUpdateTheirRole(t *testing.T) {
 	mohwAdminUser := createAdminUser(t, ctx, userStore, auth.MOHW)
 	nacAdminUser := createAdminUser(t, ctx, userStore, auth.NAC)
 	bflaAdminUser := createAdminUser(t, ctx, userStore, auth.BFLA)
-	csoAdminUser := createAdminUser(t, ctx, userStore, auth.CSO)
+	csoAdminUser := createAdminUser(t, ctx, userStore, auth.GOJOVEN)
 
 	var testCase = []struct {
 		name  string
@@ -477,7 +477,7 @@ func TestUserApi_AdminUsersCanNotUpdateTheirRole(t *testing.T) {
 			},
 		},
 		{
-			name: "CSO Admin can not update their role",
+			name: "GOJOVEN Admin can not update their role",
 			input: UpdateUserRequest{
 				User: &auth.User{
 					ID:        csoAdminUser.ID,

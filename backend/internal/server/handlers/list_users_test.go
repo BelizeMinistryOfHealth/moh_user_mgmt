@@ -16,7 +16,7 @@ func TestUserCrudService_ListUsers_NonAdminNotAllowed(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := api.CreateUserApi(*userStore)
-	nonAdminUser := createTestUser(t, *userStore, auth.CSO, auth.SrRole)
+	nonAdminUser := createTestUser(t, *userStore, auth.GOJOVEN, auth.SrRole)
 	mids := NewChain(verifyUserToken(*nonAdminUser))
 	userCrudService := NewUserCrudService(userStore, userApi)
 	res := httptest.NewRecorder()
@@ -31,7 +31,7 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	ctx := context.Background()
 	userStore := createUserStore(t, ctx)
 	userApi := api.CreateUserApi(*userStore)
-	adminUser := createTestUser(t, *userStore, auth.CSO, auth.AdminRole)
+	adminUser := createTestUser(t, *userStore, auth.GOJOVEN, auth.AdminRole)
 	mids := NewChain(verifyUserToken(*adminUser))
 	userCrudService := NewUserCrudService(userStore, userApi)
 	// This user should not be included the results
@@ -65,14 +65,14 @@ func TestUserCrudService_ListUsers_AdminUserCanListUsers(t *testing.T) {
 	sort.Slice(want, func(i, j int) bool {
 		return want[i].Email < got[j].Email
 	})
-	var nonCSOUsers []UserResponse
+	var nonGOJOVENUsers []UserResponse
 	for i := range got {
-		if got[i].Org != "CSO" {
-			nonCSOUsers = append(nonCSOUsers, got[i])
+		if got[i].Org != "GoJoven" {
+			nonGOJOVENUsers = append(nonGOJOVENUsers, got[i])
 		}
 	}
-	if len(nonCSOUsers) > 0 {
-		t.Fatalf("Non CSO users returned: %v", nonCSOUsers)
+	if len(nonGOJOVENUsers) > 0 {
+		t.Fatalf("Non GoJoven users returned: %v", nonGOJOVENUsers)
 	}
 }
 
@@ -83,7 +83,7 @@ func createMultipleUsers(ctx context.Context, s auth.UserStore) []auth.User {
 			FirstName: gofakeit.FirstName(),
 			LastName:  gofakeit.LastName(),
 			Email:     gofakeit.Email(),
-			Org:       auth.CSO,
+			Org:       auth.GOJOVEN,
 			Role:      auth.SrRole,
 		}
 		user, err := s.CreateUser(ctx, req)
