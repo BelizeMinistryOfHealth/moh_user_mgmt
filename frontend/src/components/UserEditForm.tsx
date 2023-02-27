@@ -1,9 +1,9 @@
-import React from 'react';
-import { useGetUserQuery, usePutUserMutation } from '../api/usersApi';
-import { createLoader, withLoader } from '@ryfylke-react/rtk-query-loader';
 import { Button, Checkbox, createStyles, Group, Radio, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { createLoader, withLoader } from '@ryfylke-react/rtk-query-loader';
+import React from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useGetUserQuery, usePutUserMutation } from '../api/usersApi';
 import { Org, OrgValues, Role, RoleValues, User } from '../models/authUser';
 
 const useStyles = createStyles(() => ({
@@ -22,16 +22,21 @@ const useStyles = createStyles(() => ({
 }));
 
 const editFormLoader = createLoader({
-  queries: () => {
+  useQueries: () => {
     const params = useParams();
     if (!params.userId) throw new Error('No user id provided');
     const user = useGetUserQuery(params.userId);
-    return [user] as const;
+    return {
+      queries: {
+        user,
+      },
+    };
   },
   onLoading: () => <>Loading....</>,
 });
-const UserEditForm = withLoader((_, queries) => {
-  const user = queries[0].data;
+
+const UserEditForm = withLoader((_, loader) => {
+  const user = loader.queries.user.data;
   const [putUser, { isSuccess, isLoading }] = usePutUserMutation();
 
   const [organization, setOrganization] = React.useState(user.org);
