@@ -1,9 +1,9 @@
+import React from 'react';
+import { useGetUserQuery, usePutUserMutation } from '../api/usersApi';
+import { createLoader, withLoader } from '@ryfylke-react/rtk-query-loader';
 import { Button, Checkbox, createStyles, Group, Radio, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { createLoader, withLoader } from '@ryfylke-react/rtk-query-loader';
-import React from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { useGetUserQuery, usePutUserMutation } from '../api/usersApi';
 import { Org, OrgValues, Role, RoleValues, User } from '../models/authUser';
 
 const useStyles = createStyles(() => ({
