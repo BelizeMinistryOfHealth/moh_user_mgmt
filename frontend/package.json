@@ -15,7 +15,7 @@
     "@mantine/hooks": "^5.9.4",
     "@react-firebase/auth": "^0.2.10",
     "@reduxjs/toolkit": "^1.9.1",
-    "@ryfylke-react/rtk-query-loader": "^0.3.38",
+    "@ryfylke-react/rtk-query-loader": "^1.0.0",
     "@tabler/icons": "^1.116.1",
     "firebase": "^9.15.0",
     "jwt-decode": "^3.1.2",

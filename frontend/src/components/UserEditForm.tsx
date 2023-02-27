@@ -22,16 +22,21 @@ const useStyles = createStyles(() => ({
 }));
 
 const editFormLoader = createLoader({
-  queries: () => {
+  useQueries: () => {
     const params = useParams();
     if (!params.userId) throw new Error('No user id provided');
     const user = useGetUserQuery(params.userId);
-    return [user] as const;
+    return {
+      queries: {
+        user,
+      },
+    };
   },
   onLoading: () => <>Loading....</>,
 });
-const UserEditForm = withLoader((_, queries) => {
-  const user = queries[0].data;
+
+const UserEditForm = withLoader((_, loader) => {
+  const user = loader.queries.user.data;
   const [putUser, { isSuccess, isLoading }] = usePutUserMutation();
 
   const [organization, setOrganization] = React.useState(user.org);
